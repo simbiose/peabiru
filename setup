@@ -172,6 +172,8 @@ config fb_id "Please input Facebook API id: "
 config fb_secret "Please input Facebook API secret: "
 config google_id "Please input Google API id: "
 config google_secret "Please input Google API secret: "
+config github_id "Please input Github API id: "
+config github_secret "Please input Github API secret: "
 
 ini.save $DEPLOY
 
