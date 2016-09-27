@@ -1,0 +1,5 @@
+#!/bin/bash
+exec 2>&1
+echo "starting rsyslogd"
+[ -f /var/run/rsyslogd.pid ] && rm /var/run/rsyslogd.pid
+exec /usr/sbin/rsyslogd -n

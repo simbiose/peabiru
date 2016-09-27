@@ -1,0 +1,4 @@
+#!/bin/bash
+DIR=${SHARED}/logs/nginx
+[[ -d ${DOLLAR}DIR ]] || mkdir -p ${DOLLAR}DIR
+exec multilog t ${DOLLAR}DIR/main

@@ -1,0 +1,58 @@
+
+client_body_temp_path ${SHARED}/tmp 1 2;
+
+server {
+  #listen unix:${SHARED}/sock/nginx.sock default_server;
+  listen 80 default_server;
+
+  server_name osm.dev;
+  root        ${CURRENT}/public;
+  access_log  ${SHARED}/logs/nginx.access.log;
+  error_log   ${SHARED}/logs/nginx.error.log info;
+  index       index.html index.php;
+  charset     utf-8;
+
+  gzip on;
+  gzip_disable "msie6";
+  gzip_comp_level 6;
+  gzip_min_length 1100;
+  gzip_buffers 16 8k;
+  gzip_proxied any;
+  gzip_types
+    text/plain text/css text/js text/xml text/javascript application/javascript
+    application/x-javascript application/json application/xml;
+
+  location = /robots.txt  { access_log off; log_not_found off; }
+  location = /favicon.ico { access_log off; log_not_found off; }
+  location ~ /\.          { access_log off; log_not_found off; deny all; }
+  location ~ ~$           { access_log off; log_not_found off; deny all; }
+
+  location ~ ^(.+)\.json$ {
+    try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.php${DOLLAR}is_args${DOLLAR}args;
+  }
+
+  location ~ /login/ {
+    try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.php${DOLLAR}is_args${DOLLAR}args;
+  }
+
+  location ~ \.php$ {
+    alias                    ${CURRENT}/service;
+    fastcgi_index            index.php;
+    fastcgi_pass             unix:${SHARED}/sock/php.sock;
+    include                  fastcgi_params;
+    fastcgi_param            SCRIPT_FILENAME ${DOLLAR}document_root${DOLLAR}fastcgi_script_name;
+  }
+
+  location ~ (.+)\.(txt|js|css|jpg|jpeg|gif|png|svg|ico|eot|otf|woff|woff2|ttf)$ {
+    expires    max;
+    add_header Cache-Control public;
+    try_files  ${DOLLAR}uri =404;
+  }
+
+  location ~ /(.*)(\.html|) {
+    try_files ${DOLLAR}uri /index.html =404;
+  }
+
+  error_page 404 /404.html;
+  error_page 500 502 503 504 /50x.html;
+}

@@ -1,0 +1,30 @@
+[global]
+pid = ${SHARED}/pids/php-fpm.pid
+error_log = ${SHARED}/logs/fpm-error.log
+log_level = debug
+emergency_restart_threshold = 10
+emergency_restart_interval = 1m
+process_control_timeout = 1m
+
+[www]
+listen = ${SHARED}/sock/php.sock
+listen.backlog = -1
+
+user = www-data
+group = www-data
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0666
+
+catch_workers_output = yes
+
+pm = static
+pm.max_children = 4
+pm.start_servers = 3
+pm.min_spare_servers = 2
+pm.max_spare_servers = 3
+pm.max_requests = 500
+request_terminate_timeout = 300s
+slowlog = ${SHARED}/logs/www-slow.log
+php_admin_value[error_log] = ${SHARED}/logs/www-error.log
+php_admin_flag[log_errors] = on

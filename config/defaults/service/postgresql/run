@@ -1,0 +1,5 @@
+#!/bin/bash
+exec 2>&1
+echo "starting postgresql"
+exec setuidgid postgres postmaster \
+  -D /var/postgresql/data -c config_file=/etc/postgresql.conf

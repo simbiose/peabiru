@@ -1,0 +1,11 @@
+peabiru:
+  container_name: ${CONTAINER}
+  hostname: ${HOST}
+  working_dir: ${CURRENT}
+  stdin_open: true
+  tty: true
+  build: ./config
+  env_file: ./config/.env
+  volumes:
+    - ${CURRENT}:${CURRENT}
+    - ${SHARED}/data:/var/postgresql/data

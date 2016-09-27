@@ -1,0 +1,52 @@
+#!/bin/bash
+
+[ -f /etc/nginx/conf.d/local.conf ] || {
+  export DOLLAR='$'
+
+  envsubst </etc/msmtprc.template >/etc/msmtprc && rm /etc/msmtprc.template
+  envsubst </etc/nginx/conf.d/local.template >/etc/nginx/conf.d/local.conf && \
+    rm /etc/nginx/conf.d/local.template
+  envsubst </etc/nginx/nginx.conf.template >/etc/nginx/nginx.conf && \
+    rm /etc/nginx/nginx.conf.template
+  envsubst </etc/php7/php-fpm.conf.template >/etc/php7/php-fpm.conf && \
+    rm /etc/php7/php-fpm.conf.template
+
+  for dir in /service/*; do
+    envsubst <$dir/log/run >$dir/log/run.out && mv $dir/log/run.out $dir/log/run && chmod +x $dir/log/run
+    envsubst <$dir/run >$dir/run.out && mv $dir/run.out $dir/run && chmod +x $dir/run
+  done
+
+  chown postgres /var/postgresql/data && chmod 700 /var/postgresql/data
+  setuidgid postgres initdb -D /var/postgresql/data -A trust -U root --locale=UTF8
+
+  sleep 2
+  echo -e "local all all trust\nhost all all localhost trust\nhost all all 172.17.0.1/32 trust" \
+    >/var/postgresql/data/pg_hba.conf
+  supervise /service/postgresql &>/dev/null &
+
+  while ! nc -z localhost 5432 >/dev/null; do
+    sleep 3
+  done
+
+  createdb -O root $DB_NAME
+
+  sleep 2 && svc -d /service/postgresql && sleep 2
+
+  kill -HUP $!
+}
+
+[ $1 = "-bash" ] && {
+  (
+    exec </dev/null >/dev/null 2>&1
+    svc -dx /service/* /service/*/log
+    sleep 5
+    exec svscan /service 2>&1
+  ) &
+  bash
+}
+
+[ $1 = "-d" ] && {
+  while true; do
+    sleep 1000
+  done
+}
