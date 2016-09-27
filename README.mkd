@@ -1,0 +1,206 @@
+# peabiru
+
+identify and monitor broken routes.
+
+# meaning
+
+*[peabiru](https://pt.wikipedia.org/wiki/Caminho_do_Peabiru)* (*pe* way, *abiru* crumpled lawn) are ancient paths used by South American Indians long before the discovery by Europeans, linking the coast to the inland.
+
+# license
+
+[LGPL version 3](https://www.gnu.org/licenses/lgpl-3.0-standalone.html), see LICENSE and source
+
+# api
+
+## users
+users endpoint.
+
+### list
+```bash
+$ curl http://peabiru.dev/users.json -v
+```
+
+### show
+```bash
+$ curl http://peabiru.dev/users/xxleite.json -v
+```
+with more information ...
+```bash
+$ curl http://peabiru.dev/users/xxleite.json \
+  -H "Cookie: peabiru=157e9991810db7" -v
+```
+
+### create (login)
+authenticate using Oauth (twitter or osm) or Oauth2 (facebook, google or github):
+```bash
+$ curl -X POST http://peabiru.dev/login/osm.json
+  -H "Content-Type: application/json" -v
+```
+or
+```bash
+$ curl http://peabiru.dev/login/osm -v
+```
+
+### update
+```bash
+$ curl -X PUT http://peabiru.dev/users/naoliv.json -d @user.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+
+### logout
+```bash
+$ curl -X DELETE http://peabiru.dev/logout.json \
+  -H "Cookie: peabiru=157e9991810db7" -v
+```
+
+### delete
+```bash
+$ curl -X DELETE http://peabiru.dev/users/skippern.json \
+  -H "Cookie: peabiru=157e9991810db7" -v
+```
+
+## places
+places endpoint.
+
+### list
+```bash
+$ curl http://peabiru.dev/places.json -v
+```
+related to some user:
+```bash
+$ curl http://peabiru.dev/users/boneca/places.json -v
+```
+places within a range (using geohash, 3 to 5 characters):
+```bash
+$ curl http://peabiru.dev/places/g/6gy9r.json -v
+```
+or
+```bash
+$ curl http://peabiru.dev/places/g/6u4-gx.json -v
+```
+### show
+
+```bash
+$ curl http://peabiru.dev/places/1.json -v
+```
+show place with version ```1366286774```.
+```bash
+$ curl http://peabiru.dev/places/1/1366286774.json -v
+```
+### create
+```bash
+$ curl -X POST http://peabiru.dev/places.json -d @place.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+
+### update
+```bash
+$ curl -X PUT http://peabiru.dev/places/1.json -d @place2.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+
+### delete
+```bash
+$ curl -X DELETE http://peabiru.dev/places/1.json \
+  -H "Cookie: peabiru=157e9991810db7" -v
+```
+
+## paths
+paths endpoint.
+
+### list
+```bash
+$ curl http://peabiru.dev/paths.json -v
+```
+paths relate to some user:
+```bash
+$ curl http://peabiru.dev/users/boneco/paths.json -v
+```
+
+paths within a range (using geohash, 3 to 5 characters):
+```bash
+$ curl http://peabiru.dev/paths/g/6gy9r.json -v
+```
+or
+```
+$ curl http://peabiru.dev/paths/g/6u4-gx.json -v
+```
+
+### show
+```bash
+$ curl http://peabiru.dev/paths/1.json -v
+```
+show path version ```1366290813```
+```bash
+$ curl http://peabiru.dev/paths/1/1366290813.json -v
+```
+
+### create
+```bash
+$ curl -X POST http://peabiru.dev/paths.json -d @path.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+
+### update
+```bash
+$ curl -X PUT http://peabiru.dev/paths/1.json -d @path2.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+
+### delete
+```bash
+$ curl -X DELETE http://peabiru.dev/paths/1.json \
+  -H "Cookie: peabiru=157e9991810db7" -v
+```
+
+## reports
+reports endpoint.
+
+### list
+all reports:
+```bash
+$ curl http://peabiru.dev/reports.json -v
+```
+reports includind any user:
+```bash
+$ curl http://peabiru.dev/users/boneco/reports.json
+```
+reports by path(s) or place(s):
+```bash
+$ curl http://peabiru.dev/reports.json?path[]=9&place[]=8&place[]=22 -v
+```
+
+
+### show
+
+### create
+```bash
+$ curl -X POST http://peabiru.dev/reports.json -d @report.json \
+  -H "Cookie: peabiru=157e9991810db7" \
+  -H "Content-Type: application/json" -v
+```
+*note: only application user can create reports.*
+
+
+### update
+```bash
+
+```
+### <del>delete</del>
+
+## resolutions
+
+### <del>list</del>
+
+### <del>show</del>
+
+### create
+
+### update
+
+### delete

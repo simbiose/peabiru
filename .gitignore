@@ -1,0 +1,8 @@
+*.swp
+*.DS_Store
+node_modules
+vendor
+*.log
+*.pid
+*.sock
+.env
