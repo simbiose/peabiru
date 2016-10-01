@@ -1,0 +1,20 @@
+{
+  "name": "root/fool",
+  "require": {
+    "nikic/fast-route":        "dev-master",
+    "vlucas/valitron":         "dev-master",
+    "koine/strong-parameters": "dev-master"
+  },
+  "authors": [
+    {"name": "xxleite", "email": "xico@simbio.se"}
+  ],
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "" : [
+        "service/"
+      ]
+    }
+  }
+
+}
