@@ -25,6 +25,7 @@ function puts {
 
 declare -A CONF
 declare -A ini_kv
+declare -a INVALID
 declare -a ini_sections
 declare -a ini_keys
 
@@ -52,8 +53,10 @@ function ini.parse {
 
 function ini.key {
   [[ -n $3 && "add" == $1 || "del" == $1 || "get" == $1 ]] || return 1
-  [ $1 == "add" ] && { ini_kv["${2}_${3}"]="$4"; ini_keys+=( "${2}_${3}" ); } \
-    || { [ "get" == $1 ] && echo ${ini_kv["${2}_${3}"]} || unset ini_kv["${2}_${3}"]; }
+  [ $1 == "add" ] && {
+    [ -z ${ini_kv["${2}_${3}"]} ] && ini_keys+=( "${2}_${3}" )
+    ini_kv["${2}_${3}"]="$4"
+  } || { [ "get" == $1 ] && echo ${ini_kv["${2}_${3}"]} || unset ini_kv["${2}_${3}"]; }
 }
 
 # save options to ini file
@@ -83,16 +86,29 @@ function exists {
   return 0
 }
 
+# ask
+
+function ask {
+  echo -n "$1 "
+  read answer
+  [ "$answer" == "$2" ]
+}
+
 # ask config, replace existing and/or create
 
 function config {
-  answer="$(ini.key get $ENV $1)"
-  if [[ -n "$2" && -z "$answer" ]]; then
+  answer="$3"
+  key="${1//-/}"
+  [ -z "$answer" ] && answer="$(ini.key get $ENV $key)"
+  [[ -n "$2" && -z "$answer" ]] && {
     echo -n "$2"
     read answer
-    [ -n "$answer" ] && ini.key add $ENV $1 "$answer"
-  fi
-  [ -n "$answer" ] && CONF["${1^^}"]="$answer"
+    ini.key add
+  }
+  [ -n "$answer" ] && {
+    ini.key add $ENV $key "$answer"
+    CONF[${key^^}]="$answer"
+  }
 }
 
 # stdin vars expand, like envsubst
@@ -141,7 +157,7 @@ if [ -z $ENV ]; then
   ENV=${ini_sections[0]}
 elif [[ " ${ini_sections[*]} " != *" $ENV "* ]]; then
   list=$(printf ", %s" ${ini_sections[@]#${ini_sections[-1]}})" or ${ini_sections[-1]}"
-  echo "environment should be:${list:1}"
+  err "environment should be:${list:1}" true
 fi
 
 # not dev, deploy script should exists
@@ -155,12 +171,33 @@ isdev && SHARED=$(mkdir -p $CURRENT/shared && cd $CURRENT/shared && pwd) || \
 
 CONF+=( [CURRENT]=$CURRENT [SHARED]=$SHARED [DB_PWD]=$DB_PWD )
 
+# get options ...
+while test $# -gt 3; do
+  case "$3" in
+      --smtp_host|--smtp_port|--smtp_user|--smtp_pwd|--mapbox_token|--osm_key| \
+      --osm_secret|--twitter_key|--twitter_secret|--github_id|--github_secret| \
+      --google_id|--google_secret|--fb_id|--fb_secret \
+    )
+      config $3 "" $4
+      shift
+      ;;
+    *)
+      [[ "$3" == "-"* ]] && INVALID+=("$3")
+      ;;
+  esac
+  shift
+done
+
+for opt in ${INVALID[@]}; do
+  puts " invalid option: ${opt}"
+done
+
 config host "Please input host name: "
 config db_host "Please input database host: "
 config db_user "Please input database user: "
 config db_name "Please input database name: "
 config smtp_host "Please input SMTP host: "
-config smtp_post "Please input SMTP post: "
+config smtp_port "Please input SMTP port: "
 config smtp_user "Please input SMTP user: "
 config smtp_pwd "Please input STMP password: "
 config mapbox_token "Please input Mapbox API token: "
@@ -177,18 +214,26 @@ config github_secret "Please input Github API secret: "
 
 ini.save $DEPLOY
 
-# migrate
+# drop database [rollback]
+function rollback {
+  ask "Are you sure to rollback database? y or n" 'y' || exit 0;
+  puts " [database rollback] ... "
+  docker exec -i $CONTAINER /bin/bash -c \
+    "dropdb -U ${CONF[DB_USER]} -h ${CONF[DB_HOST]} ${CONF[DB_NAME]} && sleep 10 && \
+    createdb -U ${CONF[DB_USER]} -h ${CONF[DB_HOST]} ${CONF[DB_NAME]}"
+}
+
+# migrate schema
 function migrate {
-  echo " should migrate ... "
+  puts " [schema migration] ... "
+  docker exec -i $CONTAINER /bin/bash -c \
+    "psql -h ${CONF[DB_HOST]} -U ${CONF[DB_USER]} -d ${CONF[DB_NAME]} < ${CURRENT}/schema.sql"
 }
 
 # start/install
 function start {
   puts " [starting] ... " ""
-  isrunning && {
-    puts "\\r already started"
-    return 1
-  } || {
+  isrunning && puts "\\r already started" || {
     isinstalled && {
       docker start $CONTAINER
     } || {
@@ -210,21 +255,21 @@ function stop {
   puts " [stoping] ... " ""
   isrunning && {
     docker stop $CONTAINER && puts "\\r stopped "
-  } || {
-    puts "\\r already stopped "
-    return 1
-  }
+  } || puts "\\r already stopped "
 }
 
 # set of actions
 function action {
   case "$1" in
-    start)   start; ;;
-    stop)    stop; ;;
-    restart) stop && sleep 10 && start; ;;
-    migrate) migrate; ;;
-    *)       start && exit 1;
+    start)    start; ;;
+    stop)     stop; ;;
+    restart)  stop && sleep 10 && start; ;;
+    migrate)  migrate; ;;
+    reset)    rollback && sleep 10 && migrate; ;;
+    rollback) rollback; ;;
+    *)        start && exit 1;
   esac
+  return 0
 }
 
 # run!

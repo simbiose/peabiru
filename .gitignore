@@ -7,3 +7,4 @@ shared
 *.pid
 *.sock
 .env
+deploy.conf
