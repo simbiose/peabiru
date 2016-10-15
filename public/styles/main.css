@@ -1,0 +1,252 @@
+@import url('http://fonts.googleapis.com/css?family=Roboto:400,700');
+
+@font-face {
+  font-family: 'peabiru';
+  src: url('/font/peabiru.eot?33164772');
+  src: url('/font/peabiru.eot?33164772#iefix') format('embedded-opentype'),
+       url('/font/peabiru.woff2?33164772') format('woff2'),
+       url('/font/peabiru.woff?33164772') format('woff'),
+       url('/font/peabiru.ttf?33164772') format('truetype'),
+       url('/font/peabiru.svg?33164772#peabiru') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^='icon-']:before, [class*=' icon-']:before {
+  font-family: 'peabiru';
+  font-style: normal;
+  font-weight: normal;
+  speak: none;
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: .2em;
+  text-align: center;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1em;
+  margin-left: .2em;
+
+  /* you can be more comfortable with increased icons size */
+  /* font-size: 120%; */
+  /* Font smoothing. That was taken from TWBS */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-osm-circled:before { content: '\e800'; }
+.icon-star:before { content: '\e801'; }
+.icon-star-empty:before { content: '\e802'; }
+.icon-ok:before { content: '\e803'; }
+.icon-attention:before { content: '\e804'; }
+.icon-cw-circled:before { content: '\e805'; }
+.icon-cog:before { content: '\e806'; }
+.icon-pause-circled:before { content: '\e807'; }
+.icon-cog-circled:before { content: '\e808'; }
+.icon-cancel:before { content: '\e809'; }
+.icon-cw:before { content: '\e80a'; }
+.icon-play-circled:before { content: '\e80c'; }
+.icon-pause:before { content: '\e80d'; }
+.icon-play:before { content: '\e80e'; }
+.icon-location:before { content: '\f031'; }
+.icon-facebook-circled:before { content: '\f051'; }
+.icon-github-circled:before { content: '\f054'; }
+.icon-twitter-circled:before { content: '\f057'; }
+.icon-gplus-circled:before { content: '\f059'; }
+.icon-user:before { content: '\f061'; }
+.icon-ok-circled:before { content: '\f06d'; }
+.icon-cancel-circled:before { content: '\f06e'; }
+.icon-spinner:before { content: '\f528'; }
+
+html, body, div, span, h1, h2, p, a, img, b, i, ul, li, footer, header {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline
+}
+
+*, *:before, *:after {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+footer, header { display: block }
+
+@-ms-viewport { width: device-width }
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  -webkit-text-size-adjust: none;
+  -ms-overflow-style: scrollbar;
+  display: -moz-flex;
+  display: -webkit-flex;
+  display: -ms-flex;
+  display: flex;
+  -moz-flex-direction: column;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -moz-justify-content: center;
+  -webkit-justify-content: center;
+  -ms-justify-content: center;
+  justify-content: center;
+  background-color: #000;
+  padding: 6em 4em 4em 4em;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: "Roboto", sans-serif;
+  font-size: 16pt;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.65em
+}
+
+body > * { position: relative; z-index: 2 }
+
+header h1 { font-size: 3.25em; margin: 0 0 0.55em 0 }
+header p { font-size: 1.35em; line-height: 1.65em }
+header a { color: inherit }
+
+footer {
+  -moz-transition: opacity 0.5s ease-in-out;
+  -webkit-transition: opacity 0.5s ease-in-out;
+  -ms-transition: opacity 0.5s ease-in-out;
+  transition: opacity 0.5s ease-in-out;
+  bottom: 4em;
+  color: rgba(255, 255, 255, 0.5);
+  left: 4em;
+  opacity: 0.5;
+  position: absolute
+}
+/*
+footer .heart { margin-bottom: -10px; padding: 5px }
+footer .heart path { fill: #FE4365 }
+*/
+footer .heart {
+  background-color: red;
+  display: inline-block;
+  height: 16px;
+  margin: 0 10px;
+  position: relative;
+  top: 4px;
+  transform: rotate(-45deg);
+  width: 16px
+}
+footer .heart:before, footer .heart:after {
+  content: '';
+  background-color: red;
+  border-radius: 50%;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  top: -50%;
+  left: 0;
+}
+footer .heart:after { left: 50%; top: 0 }
+
+@media screen and (max-width: 1680px) {
+  body, input, select, textarea { font-size: 12pt }
+  body { padding: 6em 3.5em 3.5em 3.5em }
+  footer { bottom: 3.5em; left: 3.5em }
+}
+
+@media screen and (max-width: 1280px) {
+  body, input, select, textarea { font-size: 11pt}
+}
+
+@media screen and (max-width: 980px) {
+  body, input, select, textarea { font-size: 12pt }
+}
+
+@media screen and (max-width: 736px) {
+  body, input, select, textarea { font-size: 12pt }
+  body { padding: 5em 2em 2em 2em }
+  header h1 { font-size: 2em }
+  header p { font-size: 1em }
+  footer { bottom: 2em; left: 2em }
+}
+
+@media screen and (max-height: 640px) {
+  html, body { height: auto; min-height: 100% }
+}
+
+@media screen and (max-width: 480px) {
+  body, input, select, textarea { font-size: 12pt }
+  html, body { min-width: 320px }
+  header { margin: 0 0 1em 0 }
+}
+
+@media screen and (max-width: 360px) {
+  body { padding: 5em 1.25em 1.25em 1.25em }
+  footer { bottom: 1.25em; left: 1.25em }
+}
+
+a {
+  -moz-transition: border-bottom-color 0.2s ease, color 0.2s ease;
+  -webkit-transition: border-bottom-color 0.2s ease, color 0.2s ease;
+  -ms-transition: border-bottom-color 0.2s ease, color 0.2s ease;
+  transition: border-bottom-color 0.2s ease, color 0.2s ease;
+  border-bottom: dotted 1px rgba(255, 255, 255, 0.25);
+  color: #1cb495;
+  text-decoration: none
+}
+
+a:hover {
+  border-bottom-color: transparent;
+  color: #1cb495 !important;
+  text-decoration: none
+}
+
+.login-btns a:before, .login-btns a:after { margin: 0px }
+.login-btns a, .login-btns a:hover {
+  color: white;
+  font-size: 2.6em;
+  border-bottom: 0px;
+  transition: none;
+  margin-right: 0.3em
+}
+
+p { margin: 0 0 2em 0 }
+
+h1, h2, h3, h4, h5, h6 {
+  color: #fff;
+  font-weight: 700;
+  line-height: 1em;
+  margin: 0 0 1em 0
+}
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none }
+
+header h1 { font-size: 100px !important }
+header h2 { font-size: 1.35em; font-weight: 500 }
+
+#bg-map {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: auto;
+  background: #0e0e0e !important
+}
+#bg-map .leaflet-container { background: #0e0e0e !important }
+#bg-map .leaflet-control-attribution { display: none !important }
+
+.typed-cursor {
+  opacity: 1;
+  -webkit-animation: blink 0.7s infinite;
+  -moz-animation: blink 0.7s infinite;
+  animation: blink 0.7s infinite;
+}
+
+@keyframes blink { 0% { opacity:1 } 50% { opacity:0; } 100% { opacity:1 } }
+@-webkit-keyframes blink { 0% { opacity:1 } 50% { opacity:0 } 100% { opacity:1 } }
+@-moz-keyframes blink { 0% { opacity:1 } 50% { opacity:0 } 100% { opacity:1 } }
