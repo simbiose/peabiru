@@ -225,8 +225,11 @@ class Colorful {
       $this->available_themes = array_keys((array) $this->themes);
     $this->theme = (object)
       $this->themes->{$this->available_themes[rand(0, count($this->available_themes)-1)]};
-    error_log( $this->theme->foreground .
-     preg_replace_callback($this->sql->regex, [&$this, 'parser'], $args[0]) ."\x1b[0m");
+    debug(
+      $this->theme->foreground . preg_replace_callback(
+        $this->sql->regex, [&$this, 'parser'], $args[0]
+      ) ."\x1b[0m"
+    );
   }
 
   function parser ($matches) {

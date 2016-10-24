@@ -11,6 +11,7 @@
 
 class Resourceful {
   use Permissible;
+  use Session;
 
   private $_headers     = [];
   private $_params      = [];

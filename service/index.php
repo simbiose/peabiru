@@ -11,6 +11,8 @@
 
 require_once __DIR__ .'/../vendor/autoload.php';
 
+define('DEV', getenv('ENV') == 'development');
+
 /**
  * debug
  *

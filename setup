@@ -169,7 +169,7 @@ DB_PWD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c ${1:-16})
 isdev && SHARED=$(mkdir -p $CURRENT/shared && cd $CURRENT/shared && pwd) || \
   SHARED=$(cd $CURRENT/../shared && pwd)
 
-CONF+=( [CURRENT]=$CURRENT [SHARED]=$SHARED [DB_PWD]=$DB_PWD )
+CONF+=( [CURRENT]=$CURRENT [SHARED]=$SHARED [DB_PWD]=$DB_PWD [ENV]=$ENV )
 
 # get options ...
 while test $# -gt 3; do
