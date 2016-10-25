@@ -21,8 +21,10 @@ define('DEV', getenv('ENV') == 'development');
 
 function debug (...$args) {
   $content = '';
-  foreach ($args as $arg) $content .= PHP_EOL .
-    ((is_array($arg) || is_object($arg)) ? json_encode($arg) : var_export($arg, true));
+  foreach ($args as $arg) $content .= PHP_EOL . (
+    (is_array($arg) || is_object($arg)) ? json_encode($arg) :
+      (is_string($arg) ? $arg : var_export($arg, true)));
+
   error_log($content . PHP_EOL);
 }
 

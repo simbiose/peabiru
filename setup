@@ -176,7 +176,7 @@ while test $# -gt 3; do
   case "$3" in
       --smtp_host|--smtp_port|--smtp_user|--smtp_pwd|--mapbox_token|--osm_key| \
       --osm_secret|--twitter_key|--twitter_secret|--github_id|--github_secret| \
-      --google_id|--google_secret|--fb_id|--fb_secret \
+      --google_id|--google_secret|--facebook_id|--facebook_secret \
     )
       config $3 "" $4
       shift
@@ -205,8 +205,8 @@ config osm_key "Please input OpenStreeMap API key: "
 config osm_secret "Please input OpenStreeMap API secret: "
 config twitter_key "Please input Twitter API key: "
 config twitter_secret "Please input Twitter API secret: "
-config fb_id "Please input Facebook API id: "
-config fb_secret "Please input Facebook API secret: "
+config facebook_id "Please input Facebook API id: "
+config facebook_secret "Please input Facebook API secret: "
 config google_id "Please input Google API id: "
 config google_secret "Please input Google API secret: "
 config github_id "Please input Github API id: "

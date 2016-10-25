@@ -50,7 +50,7 @@ SQL
   }
 
   function getRelation ($parent, $table) {
-    debug(' [relations] parent: ', $parent, ' -> ', $table);
+    debug(" [relations] parent: $parent -> $table");
     $results    = [];
     $ref_parent = $this->struct[$parent][$table] ?: [$this->struct[$parent]['pk']];
     $ref_table  = $this->struct[$table][$parent] ?: [$this->struct[$table]['pk']];
@@ -116,16 +116,17 @@ class Norm extends NotORM {
   private static function connect () {
     // load schema
     $con   = new PDO(
-      sprintf('pssql:host=%s;dbname=%s', getenv('DB_HOST'), getenv('DB_NAME')),
+      sprintf('pgsql:host=%s;dbname=%s', getenv('DB_HOST'), getenv('DB_NAME')),
       getenv('DB_USER'), null, [PDO::ATTR_PERSISTENT => true]
     );
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     $con->setAttribute(PDO::ATTR_CASE,    PDO::CASE_LOWER);
 
     self::$norm = new self($con, new Schema($con));
-    // DEV condition ?
-    self::$colorful = new Colorful();
-    self::$norm->debug = [&self::$colorful, 'colorize'];
+    if (DEV) {
+      self::$colorful = new Colorful();
+      self::$norm->debug = [&self::$colorful, 'colorize'];
+    }
   }
 
   static function to_a ($results=null) {

@@ -33,7 +33,7 @@ trait Authenticable {
       'user_info'         => 'https://www.googleapis.com/oauth2/v1/userinfo',
       'scope'             => 'https://www.googleapis.com/auth/userinfo.profile'
     ],
-    'fb' => [
+    'facebook' => [
       'authorization_url' => 'https://www.facebook.com/dialog/oauth',
       'token_url'         => 'https://graph.facebook.com/v2.3/oauth/access_token',
       'user_info'         => 'https://graph.facebook.com/me',
@@ -65,7 +65,7 @@ trait Authenticable {
     debug(
       '[strategy]  [base]                     [key]                 [secret]',
       $strategy .'  '. $base .'  '. getenv($strategy .'_KEY') .'  '. getenv($strategy .'_SECRET')
-    )
+    );
 
     if (empty($oauth_token)) {
       debug(' oauth_token is empty ');
