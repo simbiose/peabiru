@@ -101,6 +101,69 @@ class Result extends NotORM_Result {
     }
     return $results;
   }
+
+ /** Execute the built query
+  * @return null
+  */
+
+  protected function execute() {
+    debug(' >>>> execute <<<<  ');
+    if (isset($this->rows)) return;
+
+    $result     = false;
+    $exception  = null;
+    $parameters = [];
+
+    foreach (array_merge(
+        $this->select, [$this, $this->group, $this->having], $this->order, $this->unionOrder
+      ) as $val
+    ) if (($val instanceof NotORM_Literal || $val instanceof self) && $val->parameters)
+        $parameters = array_merge($parameters, $val->parameters);
+
+    try {
+      $result = $this->query($this->__toString(), $parameters);
+    } catch (PDOException $exception) { /* later */  }
+
+    if (!$result)
+      if ((!$this->select && $this->accessed) && ($this->accessed = '') && ($this->access = []))
+        $result = $this->query($this->__toString(), $parameters);
+      elseif ($exception)
+        throw $exception;
+
+    $this->rows = [];
+
+    if ($result) {
+      $cast_all   = null;
+      $fn_body    = '';
+      $i          = -1;
+      $cast_index = ['numeric'=>'float', 'boolean'=>'bool'];
+
+      $result->setFetchMode(PDO::FETCH_ASSOC);
+
+      foreach ($result as $key => $row) {
+        if (!$cast_all) {
+          foreach ($row as $k => $v)
+            if (
+              ($type = $result->getColumnMeta(++$i)['native_type']) && isset($cast_index[$type])
+              && is_string($v) && ($type = $cast_index[$type])
+            ) $fn_body .= '  $row["'. $k .'"] = ('. $type .') $row["'. $k .'"];'. PHP_EOL;
+          $cast_all = create_function('&$row', $fn_body);
+        }
+
+        $cast_all($row);
+
+        if (isset($row[$this->primary])) {
+          $key = $row[$this->primary];
+          if (!is_string($this->access))
+            $this->access[$this->primary] = true;
+        }
+
+        $this->rows[$key] = new $this->notORM->rowClass($row, $this);
+      }
+    }
+
+    $this->data = $this->rows;
+  }
 }
 
 /**
@@ -117,7 +180,11 @@ class Norm extends NotORM {
     // load schema
     $con   = new PDO(
       sprintf('pgsql:host=%s;dbname=%s', getenv('DB_HOST'), getenv('DB_NAME')),
-      getenv('DB_USER'), null, [PDO::ATTR_PERSISTENT => true]
+      getenv('DB_USER'), null, [
+        PDO::ATTR_PERSISTENT        => true,
+        PDO::ATTR_EMULATE_PREPARES  => false,
+        PDO::ATTR_STRINGIFY_FETCHES => false
+      ]
     );
     $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     $con->setAttribute(PDO::ATTR_CASE,    PDO::CASE_LOWER);
