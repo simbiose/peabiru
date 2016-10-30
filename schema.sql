@@ -7,7 +7,7 @@ BEGIN
     CREATE TYPE strategy_enum AS ENUM ('osm', 'facebook', 'github', 'google', 'twitter');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'report_enum') THEN
-    CREATE TYPE report_enum AS ENUM ('path_changed', 'place_changed', 'sub2place', 'sub2path', 'mention');
+    CREATE TYPE report_enum AS ENUM ('path_changed', 'place_changed', 'sub2place', 'sub2path', 'mention', 'isolated');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'place_enum') THEN
     CREATE TYPE place_enum AS ENUM ('city', 'farm', 'hamlet', 'isolated_dwelling', 'suburb', 'town', 'village');
@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS places (
   id SERIAL NOT NULL PRIMARY KEY,
   node BIGINT NOT NULL,
   place place_enum DEFAULT 'city',
+  last_check TIMESTAMP DEFAULT NULL,
   lat DECIMAL(7, 5) NOT NULL,
   lon DECIMAL(8, 5) NOT NULL,
   name VARCHAR(60) NOT NULL,
