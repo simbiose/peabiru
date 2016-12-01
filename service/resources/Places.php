@@ -34,11 +34,13 @@ class Places extends \libs\Resourceful {
     if (in_array($action, ['create', 'update'])) {
       $validator = $this->validates();
       $validator->rules([
-        'integer'=>'place.node', 'float'=>['place.lat', 'place.lon'], 'alphaNum'=>'place.name'
+        'integer'=>'place.node', 'float'=>['place.lat', 'place.lon']
       ]);
       $validator->rule('in', 'place.place', [
         'city', 'farm', 'hamlet', 'isolated_dwelling', 'suburb', 'town', 'village'
       ]);
+      if ($action == 'create')
+        $validator->rule('required', ['place.name', 'place.lat', 'place.lon']);
 
       if (!$validator->validate())
         return $this->code(400)->finish($validator->errors(), true);
@@ -90,9 +92,10 @@ class Places extends \libs\Resourceful {
   protected function create ($params) {
     $place = $this->params('place', ['lat', 'lon', 'name', 'node', 'place']);
 
-    if (($exists = Norm::places()->select('id, name')
-      ->where('lat = ? AND lon = ?', round($place->lat, 5), round($place->lon, 5))->fetch()
-    )) return $this->code(400)->finish(['error'=>"already exists with name: $exists[name]"]);
+    if (($exists = Norm::places()->select('id, name')->where(
+      '(lat = ? AND lon = ?) OR node = ?', round($place->lat, 5),
+      round($place->lon, 5), ($place->node ?: 0)
+    )->fetch())) return $this->code(422)->finish(['error'=>"already exists with id:$exists[id]"]);
 
     if (
       ($hash = $this->geohash_encode($place->lat, $place->lon, 5)) &&

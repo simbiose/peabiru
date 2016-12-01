@@ -55,7 +55,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS strategies_uniq ON strategies (identifier, str
 
 CREATE TABLE IF NOT EXISTS places (
   id SERIAL NOT NULL PRIMARY KEY,
-  node BIGINT NOT NULL,
+  node BIGINT DEFAULT NULL,
   place place_enum DEFAULT 'city',
   last_check TIMESTAMP DEFAULT NULL,
   lat DECIMAL(7, 5) NOT NULL,

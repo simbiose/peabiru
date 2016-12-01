@@ -107,7 +107,6 @@ class Result extends NotORM_Result {
   */
 
   protected function execute() {
-    debug(' >>>> execute <<<<  ');
     if (isset($this->rows)) return;
 
     $result     = false;
