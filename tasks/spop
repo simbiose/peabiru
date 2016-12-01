@@ -1,0 +1,146 @@
+#!/usr/bin/env php7
+<?php
+
+/**
+ * <leite> spop ?
+ * <naoliv> "script de popular"
+ *
+ */
+
+include 'utils.php';
+
+$opts     = getopt('k:a:t:f:h');
+$p_list   = [
+  'city'   => true, 'town' => true, 'village' => true, 'hamlet' => true,
+  'suburb' => true, 'farm' => true, 'isolated_dwelling' => true
+];
+
+$temp         = isset($opts['f']) ? $opts['f'] : tempnam(sys_get_temp_dir(), 'places_');
+$area         = (int) (isset($opts['a']) ? $opts['a'] : 3600059470);
+$timeout      = (int) (isset($opts['t']) ? $opts['t'] : 9000);
+$combination  = isset($opts['k']) ? join('|', array_filter(array_map(function ($k) use ($p_list) {
+    if (isset($p_list[$k])) return $k;
+  }, explode(',', $opts['k'])))) : join('|', array_keys($p_list));
+
+if (isset($opts['h']))
+  exit('
+  -h                  show this help.
+  -d                  enable debug messages.
+  -k [city,town,...]  kind of places to retrieve, accepts any combination
+                        of: city,town,village,hamlet,suburb,farm,isolated_dwelling
+                        separated by comma, default: "all"
+  -a [area]           area to search in overpass, default: 3600059470.
+  -t [timeout]        timeout to retrieve data from overpass, default: 9000.
+  -f [file path]      file with places or path to hold places data, must be a valid file path,
+                        defaults to system temporary file name.
+
+');
+
+if (file_exists($temp) && filesize($temp) == 0) {
+  if (!(($result = get(
+    'https://overpass-api.de/api/interpreter?'. http_build_query(['data' => sprintf(
+'[out:json][timeout:%d];
+area(%d)->.searchArea;
+(
+  node["place"~"^(%s)$"](area.searchArea);
+);
+out body;
+>;
+out skel qt;', $timeout, $area, $combination)]), [],
+  [CURLOPT_CONNECTTIMEOUT=>15, CURLOPT_TIMEOUT=>$timeout], $temp, true
+  )) && $result[0] == 200)) exit('failed to download json');
+}
+
+if (filesize($temp) > 30e6) exit('file too big to process, exiting script'. PHP_EOL);
+
+info('loading json ... <'. $temp .'>');
+
+$data = json_decode(file_get_contents($temp));
+
+if (!($data && isset($data->elements))) exit('json does not have `elements`'. PHP_EOL);
+
+info('loaded with '. count($data->elements) .' nodes found!');
+
+$places      = [];
+$not_created = [];
+$not_updated = [];
+$to_update   = [];
+
+// strip data
+foreach ($data->elements as $key => $val)
+  if (isset($p_list[trim($val->tags->place)]))
+    $places[] = (object) ['place' => [
+      'node'  => (int) $val->id,
+      'place' => trim($val->tags->place),
+      'name'  => trim($val->tags->name),
+      'lat'   => (float) $val->lat,
+      'lon'   => (float) $val->lon
+    ]];
+
+unset($data);
+info('processed '. count($places) .' nodes!, about to create ...');
+
+// gauge
+$steps = gauge(0, count($places));
+$index = 0;
+
+// mass creation
+foreach ($places as $place)
+  if (!(
+    ($res = post('http://localhost/places.json', json_encode($place),
+      ['Content-Type: application/json'], [])) && $steps(++$index) && $res[0] == 201)
+  ) {
+    if (
+      $res[0] == 422 && ($place->place['id'] = (int)preg_replace('/[^\d]+/', '', $res[1]->error))
+    )
+      $to_update[] = $place;
+    else
+      $not_created[] = [$res[1], $place];
+  }
+
+info(sprintf(
+  '%d created, %d failed and %d to update',
+  ($index - count($to_update) - count($not_created)),
+  count($not_created),
+  count($to_update)
+));
+
+if (count($to_update) > 0) {
+  // gauge
+  $steps = gauge(0, count($to_update));
+  $index = 0;
+
+  // mass update
+  foreach ($to_update as $place)
+    if (!((
+      $res = post(sprintf('http://localhost/places/%d.json', $place->place['id']),
+        json_encode(($place = (object) ['place' => except($place->place, ['id'])])),
+          ['Content-Type: application/json', 'X-HTTP-Method-Override: PUT'], []))
+      && $steps(++$index) && $res[0] == 204
+    ))
+      $not_updated[] = [$res[1], $place];
+
+  info(sprintf(
+    '%d updated, %d failed', ($index - count($not_updated)), count($not_updated)
+  ));
+}
+
+if (count($not_created) > 0) {
+  info('could not create:');
+  foreach ($not_created as $ncreated)
+    info(sprintf(
+      '%s -> %s [%d] (%s)', json_encode($ncreated[0]),
+      $ncreated[1]->place['name'], (int)$ncreated[1]->place['node'], $ncreated[1]->place['place']
+    ));
+}
+
+if (count($not_updated) > 0) {
+  info('could not update:');
+  foreach ($not_updated as $nupdated)
+    info(sprintf(
+      '%s -> %s [%d] (%s)', json_encode($nupdated[0]),
+      $nupdated[1]->place['name'], (int)$nupdated[1]->place['node'], $nupdated[1]->place['place']
+    ));
+}
+
+?>
