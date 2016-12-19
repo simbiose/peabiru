@@ -19,6 +19,21 @@ trait Geo {
     'f'=>14, 'g'=>15, 'h'=>16, 'j'=>17, 'k'=>18, 'm'=>19, 'n'=>20, 'p'=>21, 'q'=>22, 'r'=>23,
     's'=>24, 't'=>25, 'u'=>26, 'v'=>27, 'w'=>28, 'x'=>29, 'y'=>30, 'z'=>31
   ];
+  private $_box = [[
+      'p', 'r', 'x', 'z',
+      'n', 'q', 'w', 'y',
+      'j', 'm', 't', 'v',
+      'h', 'k', 's', 'u',
+      '5', '7', 'e', 'g',
+      '4', '6', 'd', 'f',
+      '1', '3', '9', 'c',
+      '0', '2', '8', 'b'
+    ], [
+      'b', 'c', 'f', 'g', 'u', 'v', 'y', 'z',
+      '8', '9', 'd', 'e', 's', 't', 'w', 'x',
+      '2', '3', '6', '7', 'k', 'm', 'q', 'r',
+      '0', '1', '4', '5', 'h', 'j', 'n', 'p'
+  ]];
 
   /**
    * geohash encode, see: https://en.wikipedia.org/wiki/Geohash
@@ -63,5 +78,72 @@ trait Geo {
     while (++$total < $depth && ($combined *= 2) > -1);
 
     return $expect_hash ? $this->geohash_encode($combined) : $combined;
+  }
+
+  /**
+   * get range recursively using 4x8 and 8x4 tables
+   *
+   * @param array   &$hashes
+   * @param array   &$positions
+   * @param array   $limits
+   * @param string  $parent
+   * @param boolean $even
+   * @param integer $steps
+   */
+
+  private function range_recursive (
+    &$hashes, &$positions, $limits, $parent, $even, $steps
+  ) {
+
+    list($_x, $_y, $_x2, $_y2, $last) = $positions[strlen($parent)];
+
+    $v   = $h = 0;
+    $x   = !$limits[0] ? -1 : $_x;
+    $y   = !$limits[1] ? -1 : $_y;
+    $x2  = !$limits[2] ? ($even ? 7 : 3) : $_x2;
+    $y2  = !$limits[3] ? ($even ? 3 : 7) : $_y2;
+    $box = &$this->_box[(int) $even];
+
+    do
+      do
+        if ($v > $y && $v <= $y2 && $h > $x && $h <= $x2)
+          if ($last)
+            $hashes[] = $parent . $box[($v * $steps) + $h];
+          else
+            $this->range_recursive(
+              $hashes, $positions,
+              [$_x == $h - 1, $_y == $v - 1, $_x2 == $h, $_y2 == $v],
+              $parent . $box[($v * $steps) + $h], !$even, $even ? 4 : 8
+            );
+      while (++$h < $steps);
+    while (32 > (++$v * $steps) && ($h = 0) > -1);
+  }
+
+  /**
+   * get range of geohashes, example: 6u4-gx (6u4 -> 6gx), 6u5-752
+   *
+   * @param string $from
+   * @param string $to
+   * @return array
+   */
+
+  private function geohash_range ($from, $to) {
+    // match from and to lengths
+    if (($len = strlen($from)) > ($to_len = strlen($to)))
+      $to = substr($from, 0, -($to_len)) .$to;
+
+    $i = $even = 0;
+    $hashes = $pos = [];
+
+    while (
+      $i < $len && ($box = &$this->_box[(int) $even = !$even]) && ($steps = $even ? 8 : 4)
+    ) $pos[] = [
+        (($begin = array_search($from[$i], $box)) % $steps) -1, (($begin / $steps) << 0) -1,
+        (($end = array_search($to[$i], $box)) % $steps), (($end / $steps) << 0), ++$i == $len
+      ];
+
+    $this->range_recursive($hashes, $pos, [true, true, true, true], '', true, 8);
+
+    return $hashes;
   }
 }
