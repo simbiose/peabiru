@@ -40,7 +40,7 @@ class Places extends \libs\Resourceful {
         'city', 'farm', 'hamlet', 'isolated_dwelling', 'suburb', 'town', 'village'
       ]);
       if ($action == 'create')
-        $validator->rule('required', ['place.name', 'place.lat', 'place.lon']);
+        $validator->rule('required', ['place.node', 'place.lat', 'place.lon']);
 
       if (!$validator->validate())
         return $this->code(400)->finish($validator->errors(), true);
@@ -57,15 +57,32 @@ class Places extends \libs\Resourceful {
     $limit  = true;
     $places = [];
     $query  = $params->user ? Norm::user_places() : Norm::places();
+    $zoom   = (int) empty($this->param('zoom')) ? 0 : $this->param('zoom');
 
     if ($params->user && !($limit = false))
       $query->where('(users.id = ? OR users.slug = ?)', (int) $params->user, $params->user);
 
-    if (!empty($p = $this->param('p')) || ($limit && ($p = 1)))
+    if (
+      !empty($time = $this->param('time') ?: $this->param('created') ?: $this->param('updated'))
+      && is_numeric($time) && ($time = (int) $time)
+    ) $query->where(sprintf(
+        '(places.%s BETWEEN to_timestamp(%d) AND to_timestamp(%d))',
+        (empty($this->param('created')) ? 'updated_at' : 'created_at'), ($time - 86400), $time
+      ));
+
+    if (!empty($p = $this->param('page')) || ($limit && ($p = 1)))
       $query->limit(200, ($p - 1) * 200);
 
-    foreach ($query->select('places.id, lat, lon, hashes.h5 AS hash, places.name') as $place)
-      $places[] = $place;
+    if (($zip = !empty($this->param('compressed')))) $places[] = $zoom < 10 ?
+      ['lat', 'lon', 'count', 'hash'] : ['id', 'lat', 'lon', 'node', 'place', 'name', 'hash'];
+
+    if ($zoom > 10)
+      foreach ($query->select('places.*, hashes.h5 AS hash') as $place)
+        $places[] = $place;
+    else
+      foreach (
+        $query->select('places.*, hashes.h5 AS hash')->group() as $place
+      ) $places[] = $place;
 
     return $places;
   }
@@ -102,7 +119,7 @@ class Places extends \libs\Resourceful {
       ($current = Norm::places()->insert((array) $place))
     ) {
       if(!$current->hashes()->insert([
-        'h2' => substr($hash, 0, -3), 'h3' => substr($hash, 0, 2),
+        'h2' => substr($hash, 0, -3), 'h3' => substr($hash, 0, -2),
         'h4' => substr($hash, 0, -1), 'h5' => $hash
       ])) return $this->code(500)->finish(['error'=>'failed to hash place']);
 
@@ -125,8 +142,8 @@ class Places extends \libs\Resourceful {
    */
 
   protected function update ($params, $id) {
-    $place   = $this->params('place', ['lat', 'lon', 'name', 'node', 'place']);
-    $hash    = '';
+    $place = $this->params('place', ['lat', 'lon', 'name', 'node', 'place']);
+    $hash  = '';
 
     if (
       (isset($place->lat) && isset($place->lon)) &&
@@ -140,7 +157,7 @@ class Places extends \libs\Resourceful {
 
     if ($this->place->update((array) $place)) {
       if(!$this->place->hashes()->update([
-        'h2' => substr($hash, 0, -3), 'h3' => substr($hash, 0, 2),
+        'h2' => substr($hash, 0, -3), 'h3' => substr($hash, 0, -2),
         'h4' => substr($hash, 0, -1), 'h5' => $hash
       ])) return $this->code(500)->finish(['error'=>'failed to hash place']);
 
