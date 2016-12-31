@@ -9,13 +9,14 @@
 
 include 'utils.php';
 
-$opts     = getopt('k:a:t:f:h');
+$opts     = getopt('e:k:a:t:f:h');
 $p_list   = [
   'city'   => true, 'town' => true, 'village' => true, 'hamlet' => true,
   'suburb' => true, 'farm' => true, 'isolated_dwelling' => true
 ];
 
 $temp         = isset($opts['f']) ? $opts['f'] : tempnam(sys_get_temp_dir(), 'places_');
+$export       = isset($opts['e']) ? $opts['e'] : null;
 $area         = (int) (isset($opts['a']) ? $opts['a'] : 3600059470);
 $timeout      = (int) (isset($opts['t']) ? $opts['t'] : 9000);
 $combination  = isset($opts['k']) ? join('|', array_filter(array_map(function ($k) use ($p_list) {
@@ -26,6 +27,7 @@ if (isset($opts['h']))
   exit('
   -h                  show this help.
   -d                  enable debug messages.
+  -e [file path]      export failed nodes to csv.
   -k [city,town,...]  kind of places to retrieve, accepts any combination
                         of: city,town,village,hamlet,suburb,farm,isolated_dwelling
                         separated by comma, default: "all"
@@ -125,22 +127,42 @@ if (count($to_update) > 0) {
   ));
 }
 
+$efile = empty($export) ? null : fopen($export, 'w+');
+
+if ($efile) fwrite($efile, "lat,lon,node,name,place\n");
+
 if (count($not_created) > 0) {
   info('could not create:');
-  foreach ($not_created as $ncreated)
+  foreach ($not_created as $ncreated) {
+    $place = (object) $ncreated[1]->place;
     info(sprintf(
       '%s -> %s [%d] (%s)', json_encode($ncreated[0]),
-      $ncreated[1]->place['name'], (int)$ncreated[1]->place['node'], $ncreated[1]->place['place']
+      $place->name, (int) $place->node, $place->place
     ));
+
+    if ($efile) fwrite($efile, sprintf(
+      '%f,%f,%d,"%s",%s'."\n",
+      $place->lat, $place->lon, (int) $place->node, $place->name, $place->place
+    ));
+  }
 }
 
 if (count($not_updated) > 0) {
   info('could not update:');
-  foreach ($not_updated as $nupdated)
+  foreach ($not_updated as $nupdated) {
+    $place = (object) $nupdated[1]->place;
     info(sprintf(
       '%s -> %s [%d] (%s)', json_encode($nupdated[0]),
-      $nupdated[1]->place['name'], (int)$nupdated[1]->place['node'], $nupdated[1]->place['place']
+      $place->name, (int) $place->node, $place->place
     ));
+
+    if ($efile) fwrite($efile, sprintf(
+      '%f,%f,%d,"%s",%s'."\n",
+      $place->lat, $place->lon, (int) $place->node, $place->name, $place->place
+    ));
+  }
 }
+
+if ($efile) fclose($efile);
 
 ?>
