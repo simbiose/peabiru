@@ -1,7 +1,7 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg">
-<metadata>Copyright (C) 2016 by original authors @ fontello.com</metadata>
+<metadata>Copyright (C) 2017 by original authors @ fontello.com</metadata>
 <defs>
 <font id="peabiru" horiz-adv-x="1000" >
 <font-face font-family="peabiru" font-weight="400" font-stretch="normal" units-per-em="1000" ascent="850" descent="-150" />
@@ -27,6 +27,8 @@
 <glyph glyph-name="cancel" unicode="&#xe809;" d="M0 90q0 36 26 62l195 195-195 196q-26 25-26 61t26 61 61 25 61-25l196-196 195 196q25 25 61 25t61-25 25-61-25-61l-195-196 195-195q25-26 25-62t-25-61q-25-25-61-25t-61 25l-195 195-196-195q-25-25-61-25t-61 25q-26 26-26 61z" horiz-adv-x="686.5" />
 
 <glyph glyph-name="cw" unicode="&#xe80a;" d="M0 350q0 207 147 354t353 146q209 0 355-148l145 103 0-465-445 149 131 93q-82 65-186 65-123 0-210-87t-87-210 87-210 210-87q82 0 150 40t108 109l176-102q-67-113-182-182t-252-68q-207 0-353 146t-147 354z" horiz-adv-x="1000" />
+
+<glyph glyph-name="search" unicode="&#xe80b;" d="M335 246l25-25q-28-28-85-86t-73-74l-27 27q16 15 74 73t86 85z m245 551q136 0 234-97t97-234-97-234-234-96q-64 0-123 24l-255-257-184 185 256 255q-26 63-26 123 0 137 98 234t234 97z m0-551q91 0 155 64t64 156-64 155-155 64-156-64-64-155 64-156 156-64z" horiz-adv-x="928" />
 
 <glyph glyph-name="play-circled" unicode="&#xe80c;" d="M0 350q0 207 147 354t353 146 354-146 146-354-146-354-354-146-353 146-147 354z m375-250l375 250-375 250 0-500z" horiz-adv-x="1000" />
 
