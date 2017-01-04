@@ -118,13 +118,14 @@ CREATE TABLE IF NOT EXISTS user_paths (
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_paths_uniq ON user_paths (fk_users, fk_paths);
 
-CREATE TABLE IF NOT EXISTS hashes (
+CREATE TABLE IF NOT EXISTS hashs (
   id SERIAL NOT NULL PRIMARY KEY,
   hash VARCHAR(5) COLLATE "C" NOT NULL,
-  len SMALLINT NOT NULL DEFAULT 5,
-  fk_places INTEGER DEFAULT NULL,
-  fk_segments INTEGER DEFAULT NULL
---,  CONSTRAINT hash_place FOREIGN KEY (fk_places)
+  len SMALLINT NOT NULL DEFAULT 5
+--,
+--  fk_places INTEGER DEFAULT NULL,
+--  fk_segments INTEGER DEFAULT NULL,
+--  CONSTRAINT hash_place FOREIGN KEY (fk_places)
 --    REFERENCES places (id) ON DELETE CASCADE,
 --  CONSTRAINT hash_segments FOREIGN KEY (fk_segments)
 --    REFERENCES segments (id) ON DELETE CASCASE
@@ -142,28 +143,28 @@ CREATE TABLE IF NOT EXISTS segments (
 
 CREATE TABLE IF NOT EXISTS hash_places (
   fk_places INTEGER NOT NULL,
-  fk_hashes INTEGER NOT NULL,
+  fk_hashs INTEGER NOT NULL,
   CONSTRAINT hash_places_place FOREIGN KEY (fk_places)
     REFERENCES places (id) ON DELETE CASCADE,
-  CONSTRAINT hash_places_hash FOREIGN KEY (fk_hashes)
-    REFERENCES hashes (id) ON DELETE CASCADE
+  CONSTRAINT hash_places_hash FOREIGN KEY (fk_hashs)
+    REFERENCES hashs (id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS hash_places_uniq ON hash_places (fk_places, fk_hashes);
+CREATE UNIQUE INDEX IF NOT EXISTS hash_places_uniq ON hash_places (fk_places, fk_hashs);
 
 CREATE TABLE IF NOT EXISTS hash_segments (
   fk_segments INTEGER NOT NULL,
   fk_paths INTEGER NOT NULL,
-  fk_hashes INTEGER NOT NULL,
+  fk_hashs INTEGER NOT NULL,
   CONSTRAINT hash_segments_segment FOREIGN KEY (fk_segments)
     REFERENCES segments (id) ON DELETE CASCADE,
   CONSTRAINT hash_segments_path FOREIGN KEY (fk_paths)
     REFERENCES paths (id) ON DELETE CASCADE,
-  CONSTRAINT hash_segments_hashes FOREIGN KEY (fk_hashes)
-    REFERENCES hashes (id) ON DELETE CASCADE
+  CONSTRAINT hash_segments_hashs FOREIGN KEY (fk_hashs)
+    REFERENCES hashs (id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS hash_segments_uniq ON hash_segments (fk_segments, fk_paths, fk_hashes);
+CREATE UNIQUE INDEX IF NOT EXISTS hash_segments_uniq ON hash_segments (fk_segments, fk_paths, fk_hashs);
 
 /*
 CREATE TABLE IF NOT EXISTS hashes (

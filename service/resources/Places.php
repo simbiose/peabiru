@@ -13,6 +13,7 @@ use \libs\Norm;
 
 class Places extends \libs\Resourceful {
   use \libs\Geo;
+  use \libs\Hashable;
 
   /**
    * construct
@@ -54,13 +55,16 @@ class Places extends \libs\Resourceful {
    */
 
   protected function index ($params) {
-    $limit  = true;
-    $places = [];
-    $query  = $params->user ? Norm::user_places() : Norm::places();
-    $zoom   = (int) empty($this->param('zoom')) ? 0 : $this->param('zoom');
+    $places  = [];
+    $limit   = empty($this->param('limit')) ? 1000 : (int) $this->param('limit');
+    $query   = Norm::hash_places();
+    $cluster = false;
 
     if ($params->user && !($limit = false))
-      $query->where('(users.id = ? OR users.slug = ?)', (int) $params->user, $params->user);
+      if ((
+        $uid = Norm::users()
+          ->where('(users.id = ? OR users.slug = ?)', (int) $params->user, $params->user)
+      )) $query->where('user_places.fk_users = ?', $uid);
 
     if (
       !empty($time = $this->param('time') ?: $this->param('created') ?: $this->param('updated'))
@@ -71,17 +75,27 @@ class Places extends \libs\Resourceful {
       ));
 
     if (!empty($p = $this->param('page')) || ($limit && ($p = 1)))
-      $query->limit(200, ($p - 1) * 200);
+      $query->limit($limit, ($p - 1) * 200);
 
-    if (($zip = !empty($this->param('compressed')))) $places[] = $zoom < 10 ?
-      ['lat', 'lon', 'count', 'hash'] : ['id', 'lat', 'lon', 'node', 'place', 'name', 'hash'];
+    if (!empty($search = $this->param('search')))
+      $query->where('name ILIKE ? OR node = ?', "%$search%", (int) $search);
 
-    if ($zoom > 10)
-      foreach ($query->select('places.*, hashes.h5 AS hash') as $place)
-        $places[] = $place;
+    if ((
+      $hashs = isset($params->geohash) ? [$params->geohash] : (isset($params->from) ?
+        $this->geohash_range($params->from, $params->to) : null)
+    ) && ($cluster = strlen($hashs[0]) < 5) !== null)
+      $query->where('hashs.len = ?', strlen($hashs[0]))->where('hash', $hashs);
+    else
+      $query->where('hashs.len = 5')->group('places.id, hashs.hash');
+
+    if ($cluster)
+      foreach (
+        $query->select('AVG(lat) AS lat, AVG(lon) AS lon, COUNT(places.*) AS count, hashs.hash')
+          ->group('hash') as $place
+      ) $places[] = $place;
     else
       foreach (
-        $query->select('places.*, hashes.h5 AS hash')->group() as $place
+        $query->select('places.*, hashs.hash') as $place
       ) $places[] = $place;
 
     return $places;
@@ -96,7 +110,7 @@ class Places extends \libs\Resourceful {
 
   protected function show ($params, $place) {
     debug(' places->show ');
-    return;
+    return $this->place;
   }
 
   /**
@@ -114,14 +128,9 @@ class Places extends \libs\Resourceful {
       round($place->lon, 5), ($place->node ?: 0)
     )->fetch())) return $this->code(422)->finish(['error'=>"already exists with id:$exists[id]"]);
 
-    if (
-      ($hash = $this->geohash_encode($place->lat, $place->lon, 5)) &&
-      ($current = Norm::places()->insert((array) $place))
-    ) {
-      if(!$current->hashes()->insert([
-        'h2' => substr($hash, 0, -3), 'h3' => substr($hash, 0, -2),
-        'h4' => substr($hash, 0, -1), 'h5' => $hash
-      ])) return $this->code(500)->finish(['error'=>'failed to hash place']);
+    if (($current = Norm::places()->insert((array) $place))) {
+      if (!$this->hash_it($place->lat, $place->lon, $current['id']))
+        return $this->code(500)->finish(['error'=>'failed to hash place']);
 
       if (($uid = $this->session('id')))
         if (!Norm::user_places()->insert(['fk_users'=>$uid, 'fk_places'=>$current['id']]))
