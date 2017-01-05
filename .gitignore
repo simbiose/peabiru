@@ -8,3 +8,8 @@ shared
 *.sock
 .env
 deploy.conf
+bundle.js
+bundle.js.map
+bundle.min.js
+bundle.min.js.map
+tags.js
