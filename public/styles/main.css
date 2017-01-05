@@ -45,6 +45,7 @@
 .icon-cog-circled:before { content: '\e808'; }
 .icon-cancel:before { content: '\e809'; }
 .icon-cw:before { content: '\e80a'; }
+.icon-search:before { content: '\e80b'; }
 .icon-play-circled:before { content: '\e80c'; }
 .icon-pause:before { content: '\e80d'; }
 .icon-play:before { content: '\e80e'; }
@@ -70,7 +71,7 @@ html, body, div, span, h1, h2, p, a, img, b, i, ul, li, footer, header {
 *, *:before, *:after {
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
-  box-sizing: border-box;
+  box-sizing: border-box
 }
 
 footer, header { display: block }
@@ -125,10 +126,16 @@ footer {
   opacity: 0.5;
   position: absolute
 }
-/*
-footer .heart { margin-bottom: -10px; padding: 5px }
-footer .heart path { fill: #FE4365 }
-*/
+menu { top: 4em; left: 4em }
+loading {
+  position: absolute;
+  width: 24px;
+  top: 4em;
+  right: 4em
+}
+loading span { font-size: 22px }
+
+footer p { margin: 0px }
 footer .heart {
   background-color: red;
   display: inline-block;
@@ -155,6 +162,8 @@ footer .heart:after { left: 50%; top: 0 }
   body, input, select, textarea { font-size: 12pt }
   body { padding: 6em 3.5em 3.5em 3.5em }
   footer { bottom: 3.5em; left: 3.5em }
+  menu { left: 3.5em; top: 3.5em }
+  loading { right: 3.5em; top: 3.5em }
 }
 
 @media screen and (max-width: 1280px) {
@@ -171,6 +180,8 @@ footer .heart:after { left: 50%; top: 0 }
   header h1 { font-size: 2em }
   header p { font-size: 1em }
   footer { bottom: 2em; left: 2em }
+  menu { left: 2em; top: 2em }
+  loading { right: 2em; top: 2em }
 }
 
 @media screen and (max-height: 640px) {
@@ -186,6 +197,8 @@ footer .heart:after { left: 50%; top: 0 }
 @media screen and (max-width: 360px) {
   body { padding: 5em 1.25em 1.25em 1.25em }
   footer { bottom: 1.25em; left: 1.25em }
+  menu { top: 1.25em; left: 1.25em }
+  loading { top: 1.25em; right: 1.25em  }
 }
 
 a {
@@ -227,7 +240,7 @@ h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none }
 header h1 { font-size: 100px !important }
 header h2 { font-size: 1.35em; font-weight: 500 }
 
-#bg-map {
+#bg-map, map {
   position: absolute;
   top: 0px;
   left: 0px;
@@ -250,3 +263,161 @@ header h2 { font-size: 1.35em; font-weight: 500 }
 @keyframes blink { 0% { opacity:1 } 50% { opacity:0; } 100% { opacity:1 } }
 @-webkit-keyframes blink { 0% { opacity:1 } 50% { opacity:0 } 100% { opacity:1 } }
 @-moz-keyframes blink { 0% { opacity:1 } 50% { opacity:0 } 100% { opacity:1 } }
+
+
+.toleft, .toright {
+  position: relative;
+  float: left
+}
+.toright { float: right }
+
+menu {
+  position: absolute;
+  max-width: 340px;
+  margin: 0px;
+  padding: 0px
+}
+menu form div { margin-left: 14px }
+menu form div span { color: white }
+menu form div input {
+  outline: none;
+  border: 0px;
+  padding: 8px 8px 4px 24px;
+  font-size: 18px;
+  margin-left: -23px;
+  letter-spacing: 0.3px;
+  min-width: 280px;
+  color: white;
+  background: transparent;
+  border-bottom: 1px solid white
+}
+menu submenu {
+  width: 333px;
+  background-color: rgba(0, 0, 0, 0.6);
+  margin: 6px 3px
+}
+menu submenu ul li { padding: 8px 16px }
+menu submenu ul li a {
+  color: white;
+  font-size: 18px;
+  letter-spacing: 0.3px
+}
+menu submenu ul li a i {
+  font-style: italic;
+  color: rebeccapurple;
+  margin-left: 8px
+}
+menu submenu ul li a span { color: red }
+
+.slideup, .slidedown {
+  max-height: 0;
+  overflow-y: hidden;
+  -webkit-transition: max-height 0.5s ease-in-out;
+  -moz-transition: max-height 0.5s ease-in-out;
+  -o-transition: max-height 0.5s ease-in-out;
+  transition: max-height 0.5s ease-in-out
+}
+.slidedown {
+  max-height: 136px;
+}
+
+/*!
+ * Hamburgers
+ * @description Tasty CSS-animated hamburgers
+ * @author Jonathan Suh @jonsuh
+ * @site https://jonsuh.com/hamburgers
+ * @link https://github.com/jonsuh/hamburgers
+ */
+
+.hamburger {
+  padding: 6px 6px;
+  display: inline-block;
+  cursor: pointer;
+  transition-property: opacity, filter;
+  transition-duration: 0.15s;
+  transition-timing-function: linear;
+  font: inherit;
+  color: inherit;
+  text-transform: none;
+  background-color: transparent;
+  border: 0;
+  outline: none;
+  margin: 2px 0 0 2px;
+  max-height: 36px;
+  overflow: visible
+}
+.hamburger:hover { opacity: 0.7 }
+.hamburger-box {
+  width: 28px;
+  height: 24px;
+  display: inline-block;
+  position: relative;
+  pointer-events: none
+}
+.hamburger-inner {
+  display: block;
+  top: 50%;
+  margin-top: -2px
+}
+.hamburger-inner, .hamburger-inner::before, .hamburger-inner::after {
+  width: 28px;
+  height: 3px;
+  background-color: white;
+  border-radius: 4px;
+  position: absolute;
+  transition-property: transform;
+  transition-duration: 0.15s;
+  transition-timing-function: ease
+}
+.hamburger-inner::before, .hamburger-inner::after { content: ""; display: block }
+.hamburger-inner::before { top: -10px }
+.hamburger-inner::after { bottom: -10px }
+
+.hamburger--squeeze .hamburger-inner {
+  transition-duration: 0.1s;
+  transition-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19)
+}
+.hamburger--squeeze .hamburger-inner::before {
+  transition: top 0.1s 0.14s ease, opacity 0.1s ease
+}
+.hamburger--squeeze .hamburger-inner::after {
+  transition: bottom 0.1s 0.14s ease, transform 0.1s cubic-bezier(0.55, 0.055, 0.675, 0.19)
+}
+
+.hamburger--squeeze.is-active .hamburger-inner {
+  transform: rotate(45deg);
+  transition-delay: 0.14s;
+  transition-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1)
+}
+.hamburger--squeeze.is-active .hamburger-inner::before {
+  top: 0;
+  opacity: 0;
+  transition: top 0.1s ease, opacity 0.1s 0.14s ease
+}
+.hamburger--squeeze.is-active .hamburger-inner::after {
+  bottom: 0;
+  transform: rotate(-90deg);
+  transition: bottom 0.1s ease, transform 0.1s 0.14s cubic-bezier(0.215, 0.61, 0.355, 1)
+}
+
+.spinner {
+  position: absolute;
+  -moz-animation: spinner 0.5s infinite linear;
+  -webkit-animation: spinner 0.5s infinite linear;
+  animation: spinner 0.5s infinite linear
+}
+.icon-location { font-size: 18px }
+
+@-moz-keyframes spinner {
+  0% { -moz-transform: rotate(0deg) }
+  100% { -moz-transform: rotate(359deg) }
+}
+@-webkit-keyframes spinner {
+  0% { -webkit-transform: rotate(0deg) }
+  100% { -webkit-transform: rotate(359deg) }
+}
+@keyframes spinner {
+  0% { transform: rotate(0deg) }
+  100% { transform: rotate(359deg) }
+}
+
