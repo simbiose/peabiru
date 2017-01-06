@@ -27,12 +27,25 @@ var fragments = window.fragments = function (value) {
 var Api = {
   map: null,
   context: null,
+  lockUser: false,
+  userInteraction: false,
   loadInterval: 0,
   circleMarkers: {},
   pinMarkers: {},
-  encode: geohash.encode.bind(geohash),
+  panOptions: {animate:true, duration:1.6, easeLinearity:0.4},
+  viewOptions: {pan: this.panOptions, zoom: {animate:true}, animate:true},
   events: riot.observable(),
   markers: new L.FeatureGroup(),
+  decode: geohash.decode.bind(geohash),
+  encode: function (lat, lon, size, ref) {
+    var result = geohash.encode(lat, lon, size);
+
+    if (ref)
+      for (var i = 0; i < ref.length; ++i)
+        if (ref[i] != result[i] && (result = result.substring(i)) !== null) break;
+
+    return result;
+  },
 
   start: function (map) {
     var self = this;
@@ -44,23 +57,30 @@ var Api = {
 
     Zepto(window).on('load', function (e) {
       console.log(' on load -> zepto ');
-      if (!history.state || location.pathname != history.state.last.pathname)
-        self.context = location.pathname.substring(1);
 
-      if (
-        (!history.state || location.hash != history.state.last.hash)
-        && (hash = fragments(location.hash))
-      ) {
-        if (hash && hash[0] && !isNaN(hash[0])) // if first is numeric -> goToPlace
+      self.context = location.pathname.substring(1);
+
+      if (location.hash != '' && (hash = fragments(location.hash))) {
+        if (hash[0] && !isNaN(hash[0]))
           return self.goToPlace.call(self, parseInt(hash[0]));
 
-        // if first is composed gh -> load places with context
-        if (hash && hash[0] && hash[0].indexOf('-') > -1)
-          return self.loadPlaces.apply(self, hash[0].split('-'));
-      }
+        if (hash[0] && hash[0].indexOf('-') > -1 && (parts = hash[0].split('-'))) {
+          if (!self.userInteraction && !self.isAt(parts[0], parts[1], parts[2])) {
+            setTimeout(function () {
+              self.map.setView(
+                self.getCenter(parts[0], parts[1]), parseInt(parts[2]) || 13, self.viewOptions
+              );
+            }, 100);
+            self.lockUser = true;
+            self.map.once('moveend zoomend', self.unlockUser.bind(self));
+          }
 
-      if (!history.state || location.search != history.state.last.search)
-        console.log(' search changed !!! ? ');
+          clearTimeout(self.loadInterval);
+          self.loadInterval = setTimeout(
+            self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
+          );
+        }
+      }
     });
   },
 
@@ -84,17 +104,21 @@ var Api = {
         });
       }
     ], function (err, data) {
-      console.log(' should pan to: ', data);
-      this.map.panTo([data.lat, data.lon], {animate:true, duration:1.6, easeLinearity:0.4});
+      setTimeout(
+        this.map.setView.bind(this.map, [data.lat, data.lon], 13, this.viewOptions), 150
+      );
     }.bind(this));
   },
 
   loading: function (e) {
+    if (this.lockUser) return;
+    this.userInteraction = true;
     this.events.trigger('loading')
   },
 
   bounds: function (e) {
-    console.log(' should get bounds ', e);
+    if (this.lockUser) return;
+
     var bounds   = this.map.getBounds(),
          topLeft = bounds.getNorthWest(),
      bottomRight = bounds.getSouthEast(),
@@ -102,20 +126,22 @@ var Api = {
 
     var size = 8 > zoom ? 2 : (10 > zoom ? 3 : (12 > zoom ? 4 : 5));
     var from = this.encode(topLeft.lat, topLeft.lng, size),
-          to = this.encode(bottomRight.lat, bottomRight.lng, size);
+          to = this.encode(bottomRight.lat, bottomRight.lng, size, from);
 
-    for (var i = 0; i < from.length; ++i)
-      if (from[i] != to[i] && (to = to.substring(i)) !== null) break;
+    this.userInteraction = false;
 
     if (e.type == 'zoomend') {
-      console.log(' should clear layers ');
       this.markers.clearLayers();
       this.pinMarkers = this.circleMarkers = {};
     }
 
-    console.log(' clear old loadPlaces ... do again! ');
+    if (e.type == 'dragend' || e.type == 'zoomend')
+      router.go(
+        location.pathname + location.search +'#'+ from +(to.length > 0 ? '-'+to : '')+ '-'+ zoom
+      );
+
     clearTimeout(this.loadInterval);
-    this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 250);
+    this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 150);
   },
 
   addCircles: function (data) {
@@ -123,8 +149,8 @@ var Api = {
       if (!this.circleMarkers[data[i].hash] && (this.circleMarkers[data[i].hash] = true))
         this.markers.addLayer(L.circle(
           [data[i].lat, data[i].lon],
-          ((x = (50 * (data[i].count || 2))) < 200 ? 200 : x),
-          {color: 'red', fillColor: 'red'}
+          ((x = (100 * (data[i].count || 2))) < 500 ? 500 : x),
+          {color: '#ff6200', fillColor: '#ff6200', stroke: false, fillOpacity: 0.6}
         ));
 
     this.events.trigger('loaded');
@@ -133,11 +159,75 @@ var Api = {
   addPins: function (data) {
     var icon = L.divIcon({className: 'icon-location'});
     for (var i = 0; i < data.length; ++i)
-      if (!this.pinMarkers[data[i].id] && (this.pinMarkers[data[i].id] = true)) {
-        this.markers.addLayer(L.marker([data[i].lat, data[i].lon], {icon: icon}));
-      }
+      if (!this.pinMarkers[data[i].id])
+        this.markers.addLayer((
+          this.pinMarkers[data[i].id] = L.marker(
+            [data[i].lat, data[i].lon], {icon: icon}
+          ).bindPopup(
+            ' <a href="https://www.openstreetmap.org/node/'+ data[i].node +'">'+ data[i].name +
+            '</a> <i>'+ data[i].place +'</i> <p>criado em: ' +
+            data[i].created_at + '</p> <p> isolado: no</p>'
+          )
+        ));
+
+    if (
+      location.hash != '' && (hash = fragments(location.hash)) &&
+      (hash[0] && !isNaN(hash[0])) && (marker = this.pinMarkers[parseInt(hash[0])])
+    ) marker.openPopup();
 
     this.events.trigger('loaded');
+  },
+
+  isAt: function (from, to, zoom) {
+    var bounds   = this.map.getBounds(),
+         topLeft = bounds.getNorthWest(),
+     bottomRight = bounds.getSouthEast(),
+            size = from.length,
+           _zoom = this.map.getZoom();
+
+    var _from = this.encode(topLeft.lat, topLeft.lng, size),
+          _to = this.encode(bottomRight.lat, bottomRight.lng, size, _from);
+
+    if (from.length == to.length)
+      for (var i = 0; i < from.length; ++i)
+        if (from[i] != to[i] && (to = to.substring(i)) !== null) break;
+
+    return zoom == _zoom && from == _from && to == _to;
+  },
+
+  getCenter: function (from, to) {
+    if (to == '') return this.decode(from);
+    to = from.substring(0, from.length - to.length) + to;
+    var _from = this.decode(from), _to = this.decode(to);
+
+    return this.midpoint(_from.lat, _from.lon, _to.lat, _to.lon);
+  },
+
+  midpoint: function (lat1, lng1, lat2, lng2) {
+    var lat1 = this.deg2rad(lat1),
+        lng1 = this.deg2rad(lng1),
+        lat2 = this.deg2rad(lat2),
+        lng2 = this.deg2rad(lng2);
+
+    var dlng = lng2 - lng1,
+        Bx   = Math.cos(lat2) * Math.cos(dlng),
+        By   = Math.cos(lat2) * Math.sin(dlng),
+        lat3 = Math.atan2(
+          Math.sin(lat1) + Math.sin(lat2),
+          Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By)
+        );
+
+    lng3 = lng1 + Math.atan2(By, (Math.cos(lat1) + Bx));
+
+    return [(lat3 * 180) / Math.PI, (lng3 * 180) / Math.PI];
+  },
+
+  unlockUser: function () {
+    this.lockUser = false;
+  },
+
+  deg2rad: function (degrees) {
+    return degrees * Math.PI / 180;
   }
 }
 

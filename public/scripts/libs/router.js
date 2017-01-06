@@ -10,6 +10,7 @@ function Router () {
   this.__routes = [];
   this.isReady  = ['interactive', 'complete'];
   this.__first  = false;
+  this.history  = [];
 }
 
 Router.prototype = (function () {
@@ -50,22 +51,22 @@ Router.prototype = (function () {
       path = path.split('?')[0].split('#')[0];
       if (this.__routes.length === 0) return;
       var matches;
-      for (var i = 0; i < this.__routes.length; i++) {
+      for (var i = 0; i < this.__routes.length; i++)
         if ((matches = path.match(this.__routes[i][0])) !== null) {
-          console.log(' matched ', path, this.__routes[i][0], i, matches);
           window.dispatchEvent(new Event('load'));
           return this.__routes[i][1].apply(null, matches.slice(1));
-        } else {
-          console.log(' do no match ', path, this.__routes[i][0], i);
         }
-      }
     },
 
     emit: function (path) {
-      console.log(' emit! ', path);
-      this.exec(
-        path.state ? path.state.path : (location.pathname + location.search + location.hash)
-      );
+      if (Object.keys(this.history).length > 0) {
+        var key;
+        for (key in this.history);
+        history.replaceState({path: this.history[key]}, '', this.history[key]);
+        delete this.history[key];
+      }
+
+      this.exec(location.pathname + location.search + location.hash);
     },
 
     start: function () {
@@ -76,7 +77,7 @@ Router.prototype = (function () {
           self._first = !!setTimeout(function () {
             window.addEventListener('popstate', self.emit.bind(self), false);
             self.go(location.pathname + location.search + location.hash);
-          }, 300);
+          }, 100);
       });
 
       // capture clicks
@@ -105,15 +106,15 @@ Router.prototype = (function () {
     },
 
     go: function (path) {
-      console.log(' [go] ', path);
-      var last = history.state ? history.state.path : path,
-        parsed = /([^\?\#]*)(\??[^#]*)(\#?.*)/.exec(last);
+      var part = /([^\?\#]*)(\??[^#]*)(\#?.*)/.exec(path);
 
-      history[((history.state && path == history.state.path) ? 'replaceState' : 'pushState')]
-        ({path: path, last: {pathname: parsed[1], search: parsed[2], hash: parsed[3]}},
-        document.title,
-        path
-      );
+      if (Object.keys(this.history).length == 0 && (this.history[part[1] + part[2]] = path))
+        history.pushState({path: path}, document.title, path);
+      else
+        if (!this.history[part[1] + part[2]] && (this.history[part[1] + part[2]] = path))
+          history.pushState({path: path}, document.title, path);
+        else
+          history.replaceState({path: path}, document.title, path);
 
       this.exec(path);
     },

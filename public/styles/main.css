@@ -406,7 +406,25 @@ menu submenu ul li a span { color: red }
   -webkit-animation: spinner 0.5s infinite linear;
   animation: spinner 0.5s infinite linear
 }
-.icon-location { font-size: 18px }
+.icon-location { font-size: 22px }
+.icon-location:before { margin-left: -5px }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background-color: rgba(0, 0, 0, 0.8) !important }
+.leaflet-popup-content {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px
+}
+.leaflet-popup-content a {
+  color: white !important;
+  font-size: 18px;
+  letter-spacing: 0.3px
+}
+.leaflet-popup-content i {
+  font-style: italic;
+  color: rebeccapurple;
+  margin-left: 8px
+}
+.leaflet-popup-content p { margin: 6px 0px !important; color: white }
 
 @-moz-keyframes spinner {
   0% { -moz-transform: rotate(0deg) }
