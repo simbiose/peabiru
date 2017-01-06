@@ -1,0 +1,229 @@
+#!/usr/bin/env php7
+<?php
+
+/**
+ * test connection between a hundred places at once
+ *
+ *
+ */
+
+include 'utils.php';
+
+$opts           = getopt('t:m:s:r:s:h');
+$default_radius = (int) (isset($opts['r']) ? $opts['r'] : 300);
+$max_locations  = (int) (isset($opts['m']) ? $opts['m'] : 100);
+$precision      = (isset($opts['s']) ? $opts['s'] == '1' || $opts['s'] == 'true' : true);
+$max_locations  = $max_locations > 100 ? 100 : $max_locations;
+$locations      = isset($opts['t']) ?
+  array_map(function ($p) { return explode(',', $p); }, explode(';', $opts['t'])) : null;
+
+define('MIN_RADIUS', $default_radius);
+
+if (isset($opts['h'])) exit('
+  -h  show this help.
+  -d  enable debug messages.
+  -m  max locations (places) each to test run.
+  -t  test list of given places, example -48.09936,-20.83876;-48.402424,-20.17695.
+  -s  "second analysis" - use directions analysis for more precision, default true.
+  -r  radius tolerance in meters for directions, default 200.
+
+');
+
+$interactions = 0;
+
+/**
+ * coordinates loop helper
+ *
+ * @param  array  $coordinate
+ * @return string
+ */
+
+function each_coord ($coordinate) {
+  return join($coordinate, ',');
+}
+
+/**
+ * get directions
+ *
+ * @param  array   $coords
+ * @param  string  $method
+ * @param  integer $radius
+ * @return mixed
+ */
+
+function directions ($coords, $method = 'driving', $radius = null) {
+  $radius     = $radius ?: MIN_RADIUS;
+  $radiuses   = join(array_map(function () use ($radius) { return $radius; }, $coords), ';');
+  $raw_coords = join(array_map('each_coord', $coords), ';');
+
+  if (!((
+    $res = get('https://api.mapbox.com/directions/v5/mapbox/'. $method .'/'. $raw_coords .
+      '?radiuses=' . $radiuses .'&geometries=polyline&overview=simplified&access_token=' .
+      getenv('MAPBOX_TOKEN'), ['Content-Type: application/json'], [], null,  DEBUG
+    )) && $res[0] == 200 && $res[1]->code == 'Ok')
+  )
+    return !debug($res[0], $res[1]->message);
+
+  #info(' +++++++++++ success ++++++++++ ');
+
+  return $res[1];
+}
+
+/**
+ * get distances (grid)
+ *
+ * @param  array  $coords
+ * @param  string $method
+ * @return mixed
+ */
+
+function distance ($coords, $method = 'driving') {
+  if (!(
+    $res = post('https://api.mapbox.com/distances/v1/mapbox/'. $method .'?access_token=' .
+      getenv('MAPBOX_TOKEN'), json_encode(['coordinates' => array_values($coords)]),
+      ['Content-Type: application/json'], [], null, DEBUG
+    )) && $res[0] == 200
+  )
+    return !debug($res);
+
+  return $res[1];
+}
+
+/**
+ * probe waypoints (locations) using directions api,
+ *   remove connected from coords and set connected and failed
+ *
+ * @param array   &$coords
+ * @param array   &$connected
+ * @param array   &$failed
+ * @param integer $waypoints
+ */
+
+function probe_waypoints (&$coords, &$connected, &$failed, $waypoints = 0) {
+  $sample    = $waypoints == 0 ? $coords : array_slice($coords, 0, $waypoints);
+  $waypoints = count($sample);
+
+  if (!($result = directions($sample))) {
+    if (false !== $failed) {
+      $counter     = 0;
+      $fail_sample = array_splice($coords, 0, $waypoints);
+      foreach ($fail_sample as $coord)
+        if (false === array_search($coord, $connected))
+          $failed[] = $coord;
+    }
+  } else {
+    if (false !== $connected)
+      if ($waypoints == 2 && false !== array_search($coords[count($coords)-1], $connected)) {
+        info(' subsample ');
+        $connected[] = $sample[0];
+      } else {
+        info(' +++++++++ ');
+        $connected = array_merge($connected, array_splice($coords, 0, $waypoints));
+      }
+  }
+
+  usleep(500000);
+}
+
+/**
+ * test "N" coordinates with direction api
+ *
+ * @param  array $coords
+ * @return array
+ */
+
+function direction_analysis ($coords) {
+  $connected = [];
+  $test      = [];
+  $failed    = [];
+  $void      = false;
+  $times     = 0;
+  $index     = 0;
+  $waypoints = 5;
+
+  info(sprintf('start probing %d ', count($coords)));
+
+  // random probing, 4 x (coordinates legth / 5)
+  while (++$times < 4 && ($index=1) && count($coords) > $waypoints && count($connected) < 50)
+    while ((($index++ - 1)* $waypoints) < count($coords) && shuffle($coords))
+      probe_waypoints($coords, $connected, $void, $waypoints);
+
+  // shame, any ideas?
+  if (count($coords) == 0 || count($connected) == 0) return $failed;
+
+  $index = 0;
+
+  info('individual probing ... ');
+  info(sprintf('connected %d, unknow status %d', count($connected), count($coords)));
+
+  // probaly disconected
+  while (
+    $index < count($coords) && ($coord = $coords[$index++]) &&
+      ($test = [$coord, $connected[rand(0, count($connected)-1)]])
+  )
+    if (($res = directions([$coord, $connected[rand(0, count($connected)-1)]])) && !usleep(500000)) {
+      $connected[] = array_splice($coords, $index -1, 1)[0];
+      --$index;
+    } else {
+      $failed[] = $coord;
+    }
+
+  info(sprintf('thats it! - isolated %d', count($failed)));
+
+  return $failed;
+}
+
+while ($interactions < 600) {
+  $res      = [];
+  $places   = [];
+  $coords   = [];
+  $isolated = [];
+
+  // get top "random", max_locations
+  foreach (
+    \libs\Norm::places()->select('id, lon, lat, name, last_check, place, node')
+      ->limit($max_locations > 100 ? 100 : $max_locations)
+      ->order('last_check ASC, random()') as $place
+  ) {
+    $coords[$place['id']] = [$place['lon'], $place['lat']];
+    $places[$place['id']] = $place;
+  }
+
+  info(sprintf(' testing %d', count($coords)));
+  info(array_keys($coords));
+
+  if (!($res = distance($coords))) exit;
+  for ($i = 0, $l = count($coords); $i < $l; ++$i)
+    if (
+      empty(array_filter($res->durations[$i])) && ($index = array_search($coords[$i], $coords))
+        && ($place = $places[$index])
+    )
+      $isolated[] = $place;
+
+  if ($precision) {
+    $diff   = count($isolated) == 0 ?
+      array_values($coords) : array_rec_diff(array_values($coords), $isolated);
+    $failed = direction_analysis($diff);
+
+    foreach ($failed as $fail)
+      if (($i = array_search($fail, $coords)) && ($place = $places[$i]))
+        $isolated[] = $place;
+  }
+
+  for ($i = 0, $l = count($isolated); $i < $l; ++$i)
+    if (!\libs\Norm::reports()->where(['fk_places'=>$isolated[$i]['id'] ])->count())
+      \libs\Norm::reports()->insert(['report'=>'isolated', 'fk_places'=>$isolated[$i]['id']]);
+
+  \libs\Norm::places()->where('id', array_keys($coords))->update([
+    'last_check' => new NotORM_Literal('NOW()')
+  ]);
+
+  unset($places);
+  unset($coords);
+  unset($isolated);
+  unset($res);
+  sleep(2);
+  ++$interactions;
+}
+
+?>
