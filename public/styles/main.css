@@ -419,6 +419,7 @@ menu submenu ul li a span { color: red }
   font-size: 18px;
   letter-spacing: 0.3px
 }
+.leaflet-popup-content a:hover { color: #1cb495 !important }
 .leaflet-popup-content i {
   font-style: italic;
   color: rebeccapurple;

@@ -42,6 +42,11 @@
     sleep 5
     exec svscan /service 2>&1
   ) &
+  (
+    cd $CURRENT/public
+    npm install
+    npm run build
+  ) &
   bash
 }
 

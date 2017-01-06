@@ -137,7 +137,7 @@ var Api = {
 
     if (e.type == 'dragend' || e.type == 'zoomend')
       router.go(
-        location.pathname + location.search +'#'+ from +(to.length > 0 ? '-'+to : '')+ '-'+ zoom
+        location.pathname + location.search +'#'+ from +'-'+ to +'-'+ zoom
       );
 
     clearTimeout(this.loadInterval);

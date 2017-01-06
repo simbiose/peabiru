@@ -49,20 +49,26 @@
     });
 
     this.on('update', function () {
-      console.log(' map updated ');
       if (opts.traveler) {
         interval = setTimeout(this.travel, duration);
-        map.dragging.disable();
-        map.touchZoom.disable();
-        map.doubleClickZoom.disable();
-        map.scrollWheelZoom.disable();
+        if (map.options.dragging) {
+          map.dragging.disable();
+          map.touchZoom.disable();
+          map.doubleClickZoom.disable();
+          map.scrollWheelZoom.disable();
+        }
       } else {
-        clearTimeout(interval);
-        map.stop();
-        map.dragging.enable();
-        map.touchZoom.enable();
-        map.doubleClickZoom.enable();
-        map.scrollWheelZoom.enable();
+        if (interval) {
+          clearTimeout(interval);
+          map.stop();
+          interval = 0;
+        }
+        if (!map.options.dragging) {
+          map.dragging.enable();
+          map.touchZoom.enable();
+          map.doubleClickZoom.enable();
+          map.scrollWheelZoom.enable();
+        }
       }
     });
   </script>

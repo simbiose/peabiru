@@ -24,9 +24,26 @@ There are some mandatory options that you can set or will be asked:
 Finally other optional authentication strategies, like:
 
   - **twitter:** (oauth) *twitter_key* and *twitter_secret*
-  - **facebook:** (oauth2) *fb_id* and *fb_secret*
+  - **facebook:** (oauth2) *facebook_id* and *facebook_secret*
   - **google:** (oauth2) *google_id* and *google_secret*
   - **github** (oauth2) *github_id* and *github_secret*
+
+# technologies
+
+## backend
+
+  - [Docker](https://www.docker.com/), container technology
+  - [PHP](http://php.net/manual/en/intro-whatis.php), api
+  - [PostgreSQL](https://www.postgresql.org/), database
+  - [Msmtp](http://msmtp.sourceforge.net/), mailer
+  - [Nginx](https://nginx.org/en/), web server
+
+## frontend
+
+  - [Node](https://nodejs.org/en/), js ecosistem
+  - [Riot](http://riotjs.com/), component-based ui
+  - [Leatlet](http://leafletjs.com/), map library
+  - [Zepto](),
 
 # deploy
 
