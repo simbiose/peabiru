@@ -88,6 +88,9 @@ class Places extends \libs\Resourceful {
     else
       $query->where('hashs.len = 5')->group('places.id, hashs.hash');
 
+    if ($this->param('isolated'))
+      $query->join('reports', 'INNER JOIN reports ON (places.id = reports.fk_places)');
+
     if ($cluster)
       foreach (
         $query->select('AVG(lat) AS lat, AVG(lon) AS lon, COUNT(places.*) AS count, hashs.hash')

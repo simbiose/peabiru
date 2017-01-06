@@ -73,12 +73,12 @@ var Api = {
             }, 100);
             self.lockUser = true;
             self.map.once('moveend zoomend', self.unlockUser.bind(self));
+          } else {
+            clearTimeout(self.loadInterval);
+            self.loadInterval = setTimeout(
+              self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
+            );
           }
-
-          clearTimeout(self.loadInterval);
-          self.loadInterval = setTimeout(
-            self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
-          );
         }
       }
     });
@@ -145,11 +145,14 @@ var Api = {
   },
 
   addCircles: function (data) {
+    var zoom = this.map.getZoom(),
+       delta = (zoom < 5 ? 4000 : (zoom < 8 ? 2000 : (zoom < 11 ? 1000 : 100))) * 4;
+
     for (var i = 0; i < data.length; ++i)
       if (!this.circleMarkers[data[i].hash] && (this.circleMarkers[data[i].hash] = true))
         this.markers.addLayer(L.circle(
           [data[i].lat, data[i].lon],
-          ((x = (100 * (data[i].count || 2))) < 500 ? 500 : x),
+          ((x = (100 * (data[i].count || 2))) < delta ? delta : x),
           {color: '#ff6200', fillColor: '#ff6200', stroke: false, fillOpacity: 0.6}
         ));
 

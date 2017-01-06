@@ -73,6 +73,8 @@ SQL
 
 class Result extends NotORM_Result {
 
+  protected $customizedJoins = [];
+
   function __construct(...$args) {
     parent::__construct(...$args);
   }
@@ -99,7 +101,17 @@ class Result extends NotORM_Result {
         $parent = $name;
       }
     }
+
+    if (count($this->customizedJoins) > 0)
+      foreach ($this->customizedJoins as $name => $query)
+        $results[$name] = ' '.$query;
+
     return $results;
+  }
+
+  function join($tableName, $joinQuery) {
+    $this->customizedJoins[$tableName] = $joinQuery;
+    return $this;
   }
 
  /** Execute the built query
