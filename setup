@@ -160,9 +160,6 @@ elif [[ " ${ini_sections[*]} " != *" $ENV "* ]]; then
   err "environment should be:${list:1}" true
 fi
 
-# not dev, deploy script should exists
-isdev || exists deploy
-
 # expand config vars
 CURRENT=$(pwd)
 DB_PWD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c ${1:-16})
