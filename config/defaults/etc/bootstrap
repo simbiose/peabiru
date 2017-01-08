@@ -3,6 +3,8 @@
 [ -f /etc/nginx/conf.d/local.conf ] || {
   export DOLLAR='$'
 
+  [ -f /etc/nginx/conf.d/default.conf ] && rm /etc/nginx/conf.d/default.conf
+
   envsubst </etc/msmtprc.template >/etc/msmtprc && rm /etc/msmtprc.template
   envsubst </etc/nginx/conf.d/local.template >/etc/nginx/conf.d/local.conf && \
     rm /etc/nginx/conf.d/local.template
@@ -33,6 +35,11 @@
   sleep 2 && svc -d /service/postgresql && sleep 2
 
   kill -HUP $!
+
+  (
+    cd $CURRENT
+    php7 /usr/sbin/composer install
+  ) &
 }
 
 [ $1 = "-bash" ] && {

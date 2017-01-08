@@ -28,3 +28,4 @@ request_terminate_timeout = 300s
 slowlog = ${SHARED}/logs/www-slow.log
 php_admin_value[error_log] = ${SHARED}/logs/www-error.log
 php_admin_flag[log_errors] = on
+clear_env = no

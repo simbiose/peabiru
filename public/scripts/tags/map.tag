@@ -33,7 +33,6 @@
     }
 
     this.on('mount', function () {
-      console.log(' map on load ');
       map = L.map('bg-map', {
         reuseTiles: true, unloadInvisibleTiles: true, zoomControl: false,
         dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false,
@@ -41,7 +40,8 @@
       }).setView(path[index], 13);
 
       L.tileLayer(
-        'http://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+        'https://api.mapbox.com/v4/mapbox.dark/{z}/{x}/{y}'+ (isRetina() ? '@2x' : '') +
+        '.png32?access_token={{ env.MAPBOX_TOKEN }}',
         {attribution: '&nbsp;', maxZoom: 14}
       ).addTo(map);
 

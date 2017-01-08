@@ -7,8 +7,8 @@
     "NODE_PATH": "$NODE_PATH:."
   },
   "scripts": {
-    "build": "cd scripts && riot -c tags tags.js && NODE_PATH=$NODE_PATH:. browserify --debug app.js | exorcist bundle.js.map > bundle.js && uglifyjs bundle.js -o bundle.min.js -c unused,dead_code -m --screw-ie8 --in-source-map bundle.js.map --source-map-include-sources --source-map bundle.min.js.map",
-    "watch": "cd scripts && riot -c tags tags.js && NODE_PATH=$NODE_PATH:. watchify app.js -d -o 'exorcist bundle.js.map > bundle.js && uglifyjs bundle.js -o bundle.min.js -c unused,dead_code -m --screw-ie8 --in-source-map bundle.js.map --source-map-include-sources --source-map bundle.min.js.map' -v"
+    "build": "cd scripts && riot --config riot.config --template handlebars -c tags tags.js && NODE_PATH=$NODE_PATH:. browserify --debug app.js | exorcist bundle.js.map > bundle.js && uglifyjs bundle.js -o bundle.min.js -c unused,dead_code -m --screw-ie8 --in-source-map bundle.js.map --source-map-include-sources --source-map bundle.min.js.map",
+    "watch": "cd scripts && riot --config riot.config --template handlebars -c tags tags.js && NODE_PATH=$NODE_PATH:. watchify app.js -d -o 'exorcist bundle.js.map > bundle.js && uglifyjs bundle.js -o bundle.min.js -c unused,dead_code -m --screw-ie8 --in-source-map bundle.js.map --source-map-include-sources --source-map bundle.min.js.map' -v"
   },
   "author": "xico <xico@simbio.se>",
   "license": "LGPL-3.0",
@@ -17,6 +17,7 @@
     "exorcist": "^0.4.0",
     "riot-cli": "^3.0.0",
     "uglify-js": "^2.7.5",
-    "watchify": "^3.8.0"
+    "watchify": "^3.8.0",
+    "handlebars": "^4.0.6"
   }
 }
