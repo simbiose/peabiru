@@ -50,6 +50,7 @@
 
     this.on('update', function () {
       if (opts.traveler) {
+        Zepto('#bg-map').css('cursor', 'hand');
         interval = setTimeout(this.travel, duration);
         if (map.options.dragging) {
           map.dragging.disable();
@@ -58,6 +59,7 @@
           map.scrollWheelZoom.disable();
         }
       } else {
+        Zepto('#bg-map').css('cursor', 'pointer');
         if (interval) {
           clearTimeout(interval);
           map.stop();

@@ -27,6 +27,7 @@ var fragments = window.fragments = function (value) {
 var Api = {
   map: null,
   context: null,
+  mapElement: null,
   lockUser: false,
   userInteraction: false,
   loadInterval: 0,
@@ -50,6 +51,8 @@ var Api = {
   start: function (map) {
     var self = this;
     this.map = map;
+
+    this.mapElement = Zepto('#bg-map');
 
     this.map.addLayer(this.markers);
     this.map.on('dragstart zoomstart movestart', this.loading.bind(this));
@@ -112,6 +115,7 @@ var Api = {
 
   loading: function (e) {
     if (this.lockUser) return;
+    if (e.type == 'dragstart') this.mapElement.css('cursor', 'move');
     this.userInteraction = true;
     this.events.trigger('loading')
   },
@@ -135,10 +139,12 @@ var Api = {
       this.pinMarkers = this.circleMarkers = {};
     }
 
-    if (e.type == 'dragend' || e.type == 'zoomend')
+    if (e.type == 'dragend' || e.type == 'zoomend') {
+      this.mapElement.css('cursor', 'pointer');
       router.go(
         location.pathname + location.search +'#'+ from +'-'+ to +'-'+ zoom
       );
+    }
 
     clearTimeout(this.loadInterval);
     this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 150);
