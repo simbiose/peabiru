@@ -9,3 +9,4 @@ peabiru:
   volumes:
     - ${CURRENT}:${CURRENT}
     - ${SHARED}/data:/var/postgresql/data
+    - ${SHARED}:${SHARED}
