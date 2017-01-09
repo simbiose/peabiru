@@ -23,6 +23,13 @@ var fragments = window.fragments = function (value) {
 
   return results;
 }
+var months = ['Jan', 'Fev', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dec'];
+var fmtDate = function (strdate) {
+  var date = new Date(Date.parse(strdate));
+  return date.getDate() +'/'+ months[date.getMonth()] +'/'+ ('0'+ date.getFullYear()).substr(-2)
+    +' '+ ('0'+ date.getHours()).substr(-2) +':'+ ('0'+ date.getMinutes()).substr(-2)
+    +':'+ ('0'+ date.getSeconds()).substr(-2);
+};
 
 var Api = {
   map: null,
@@ -152,30 +159,33 @@ var Api = {
 
   addCircles: function (data) {
     var zoom = this.map.getZoom(),
-       delta = (zoom < 5 ? 4000 : (zoom < 8 ? 2000 : (zoom < 11 ? 1000 : 100))) * 4;
+       delta = (zoom < 5 ? 4000 : (zoom < 8 ? 2000 : (zoom < 11 ? 1000 : 100))) * 4,
+       color = (this.context == 'isolated' ? 'tomato' : '#ff6200');
 
     for (var i = 0; i < data.length; ++i)
       if (!this.circleMarkers[data[i].hash] && (this.circleMarkers[data[i].hash] = true))
         this.markers.addLayer(L.circle(
           [data[i].lat, data[i].lon],
           ((x = (100 * (data[i].count || 2))) < delta ? delta : x),
-          {color: '#ff6200', fillColor: '#ff6200', stroke: false, fillOpacity: 0.6}
+          {color: color, fillColor: color, stroke: false, fillOpacity: 0.6}
         ));
 
     this.events.trigger('loaded');
   },
 
   addPins: function (data) {
-    var icon = L.divIcon({className: 'icon-location'});
+    var icon = L.divIcon({
+      className: 'icon-location' + (this.context == 'isolated' ? ' reddish' : '')
+    });
     for (var i = 0; i < data.length; ++i)
       if (!this.pinMarkers[data[i].id])
         this.markers.addLayer((
           this.pinMarkers[data[i].id] = L.marker(
             [data[i].lat, data[i].lon], {icon: icon}
           ).bindPopup(
-            ' <a href="https://www.openstreetmap.org/node/'+ data[i].node +'">'+ data[i].name +
-            '</a> <i>'+ data[i].place +'</i> <p>criado em: ' +
-            data[i].created_at + '</p> <p> isolado: no</p>'
+            ' <a href="https://www.openstreetmap.org/node/'+ data[i].node +'" target="_blank">'+
+            data[i].name + '</a> <i>'+ data[i].place +'</i> <p>criado em: ' +
+            fmtDate(data[i].created_at) + '</p>'
           )
         ));
 

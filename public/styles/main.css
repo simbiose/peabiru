@@ -426,6 +426,7 @@ menu submenu ul li a span { color: red }
   margin-left: 8px
 }
 .leaflet-popup-content p { margin: 6px 0px !important; color: white }
+.reddish { color: tomato }
 
 @-moz-keyframes spinner {
   0% { -moz-transform: rotate(0deg) }

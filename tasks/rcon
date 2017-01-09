@@ -183,7 +183,7 @@ while ($interactions < 600) {
   foreach (
     \libs\Norm::places()->select('id, lon, lat, name, last_check, place, node')
       ->limit($max_locations > 100 ? 100 : $max_locations)
-      ->order('last_check ASC, random()') as $place
+      ->order('last_check DESC, random()') as $place
   ) {
     $coords[$place['id']] = [$place['lon'], $place['lat']];
     $places[$place['id']] = $place;
