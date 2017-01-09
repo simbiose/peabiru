@@ -243,6 +243,8 @@ function start {
       done
       sleep 2
       subs < compose.yml | docker-compose -f - up -d && puts "\\r started "
+      sleep 30
+      migrate
     }
   }
 }
