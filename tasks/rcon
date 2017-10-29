@@ -56,15 +56,21 @@ function directions ($coords, $method = 'driving', $radius = null) {
   $radiuses   = join(array_map(function () use ($radius) { return $radius; }, $coords), ';');
   $raw_coords = join(array_map('each_coord', $coords), ';');
 
-  if (!((
-    $res = get('https://api.mapbox.com/directions/v5/mapbox/'. $method .'/'. $raw_coords .
-      '?radiuses=' . $radiuses .'&geometries=polyline&overview=simplified&access_token=' .
-      getenv('MAPBOX_TOKEN'), ['Content-Type: application/json'], [], null,  DEBUG
-    )) && $res[0] == 200 && $res[1]->code == 'Ok')
-  )
-    return !debug($res[0], $res[1]->message);
+  while (true) {
+    if (!((
+      $res = get('https://api.mapbox.com/directions/v5/mapbox/'. $method .'/'. $raw_coords .
+        '?radiuses=' . $radiuses .'&geometries=polyline&overview=simplified&access_token=' .
+        getenv('MAPBOX_TOKEN'), ['Content-Type: application/json'], [], null,  DEBUG
+      )) && $res[0] == 200 && $res[1]->code == 'Ok')
+    ) {
+      if ($res[0] != 429)
+        return !debug($res[0], $res[1]->message);
+    } else {
+      break;
+    }
 
-  #info(' +++++++++++ success ++++++++++ ');
+    sleep(5);
+  }
 
   return $res[1];
 }
@@ -117,8 +123,13 @@ function probe_waypoints (&$coords, &$connected, &$failed, $waypoints = 0) {
         info(' subsample ');
         $connected[] = $sample[0];
       } else {
-        info(' +++++++++ ');
         $connected = array_merge($connected, array_splice($coords, 0, $waypoints));
+        $c_total = count($connected);
+        info(
+          $c_total > 9 ? ($c_total > 99 ? ($c_total > 999 ?
+            ($c_total > 9999 ? ' ...... '. $c_total : ' ....... '. $c_total) :
+              ' ........ '. $c_total ) : ' ......... '. $c_total ) : ' .......... '. $c_total
+        );
       }
   }
 
@@ -183,14 +194,16 @@ while ($interactions < 600) {
   foreach (
     \libs\Norm::places()->select('id, lon, lat, name, last_check, place, node')
       ->limit($max_locations > 100 ? 100 : $max_locations)
-      ->order('last_check DESC, random()') as $place
+      ->order('RANDOM(), last_check DESC') as $place
   ) {
     $coords[$place['id']] = [$place['lon'], $place['lat']];
     $places[$place['id']] = $place;
   }
 
   info(sprintf(' testing %d', count($coords)));
-  info(array_keys($coords));
+  $coords_ids = array_keys($coords);
+  sort($coords_ids);
+  info($coords_ids);
 
   if (!($res = distance($coords))) exit;
   for ($i = 0, $l = count($coords); $i < $l; ++$i)

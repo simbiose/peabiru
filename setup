@@ -162,7 +162,7 @@ fi
 
 # expand config vars
 CURRENT=$(pwd)
-DB_PWD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c ${1:-16})
+DB_PWD=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c16)
 isdev && SHARED=$(mkdir -p $CURRENT/shared && cd $CURRENT/shared && pwd) || \
   SHARED=$(cd $CURRENT/../shared && pwd)
 
@@ -257,6 +257,11 @@ function stop {
   } || puts "\\r already stopped "
 }
 
+# help
+function help {
+  puts " yeah "
+}
+
 # set of actions
 function action {
   case "$1" in
@@ -266,6 +271,7 @@ function action {
     migrate)  migrate; ;;
     reset)    rollback && sleep 10 && migrate; ;;
     rollback) rollback; ;;
+    help)     help && exit 1; ;;
     *)        start && exit 1;
   esac
   return 0

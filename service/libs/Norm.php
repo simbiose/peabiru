@@ -201,6 +201,7 @@ class Norm extends NotORM {
     $con->setAttribute(PDO::ATTR_CASE,    PDO::CASE_LOWER);
 
     self::$norm = new self($con, new Schema($con));
+
     if (DEV) {
       self::$colorful = new Colorful();
       self::$norm->debug = [&self::$colorful, 'colorize'];

@@ -18,7 +18,7 @@ $p_list   = [
 $temp         = isset($opts['f']) ? $opts['f'] : tempnam(sys_get_temp_dir(), 'places_');
 $export       = isset($opts['e']) ? $opts['e'] : null;
 $area         = (int) (isset($opts['a']) ? $opts['a'] : 3600059470);
-$timeout      = (int) (isset($opts['t']) ? $opts['t'] : 9000);
+$timeout      = (int) (isset($opts['t']) ? $opts['t'] : 900);
 $combination  = isset($opts['k']) ? join('|', array_filter(array_map(function ($k) use ($p_list) {
     if (isset($p_list[$k])) return $k;
   }, explode(',', $opts['k'])))) : join('|', array_keys($p_list));
@@ -32,11 +32,12 @@ if (isset($opts['h']))
                         of: city,town,village,hamlet,suburb,farm,isolated_dwelling
                         separated by comma, default: "all"
   -a [area]           area to search in overpass, default: 3600059470.
-  -t [timeout]        timeout to retrieve data from overpass, default: 9000.
+  -t [timeout]        timeout to retrieve data from overpass, default: 900.
   -f [file path]      file with places or path to hold places data, must be a valid file path,
                         defaults to system temporary file name.
 
 ');
+
 
 if (file_exists($temp) && filesize($temp) == 0) {
   if (!(($result = get(
@@ -50,7 +51,11 @@ out body;
 >;
 out skel qt;', $timeout, $area, $combination)]), [],
   [CURLOPT_CONNECTTIMEOUT=>15, CURLOPT_TIMEOUT=>$timeout], $temp, true
-  )) && $result[0] == 200)) exit('failed to download json');
+  )) && $result[0] == 200))
+    if (DEBUG)
+      debug($result);
+    else
+      exit('failed to download json');
 }
 
 if (filesize($temp) > 30e6) exit('file too big to process, exiting script'. PHP_EOL);
