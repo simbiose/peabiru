@@ -14,25 +14,43 @@
     <li>
       <a href="/places" onclick={ moveToPlace }>Lugares importados</a>
     </li>
+
+    <li each={ types } class="kind">
+      <input type="checkbox" name={ slug } onchange={ moveToPlace } checked={ checked }/> { name }
+    </li>
+    
   </ul>
 
   <script>
+ 
+    var typesTimeout = 0;
+
     moveToPlace (e) {
-      var item = Zepto(e.target);
-      this.parent.toggleMenu();
+      var item = Zepto(e.target),
+       checked = [];
+
+      if (e.type != 'change')
+        this.parent.toggleMenu();
+
       if (item.data('id'))
         router.go(
           '/'+ (location.pathname.indexOf('isolated') > -1 ? 'isolated' : 'places') +
           '#'+ item.data('id')
         );
+
+      if (item.prop('type') != 'checkbox') return;
+
+      Zepto('li input[type=checkbox]').each(function (index, node) {
+        if (node.checked) checked.push(node.name);
+      });
+
+      if (typesTimeout)
+        clearTimeout(typesTimeout);
+
+      typesTimeout = setTimeout(function () {
+        localStorage.setItem('peabiru-types', JSON.stringify(checked));
+        router.go(location.pathname + (location.hash.length > 2 ? location.hash : ''));
+      }, 800);
     }
-
-    this.on('update', function () {
-      console.log(' update submenu ');
-    });
-
-    this.on('mount', function () {
-      console.log(' mounted submenu ');
-    });
   </script>
 </submenu>

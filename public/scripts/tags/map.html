@@ -40,9 +40,8 @@
       }).setView(path[index], 13);
 
       L.tileLayer(
-        'https://api.mapbox.com/v4/mapbox.dark/{z}/{x}/{y}'+ (isRetina() ? '@2x' : '') +
-        '.png32?access_token={{ env.MAPBOX_TOKEN }}',
-        {attribution: '&nbsp;', maxZoom: 14}
+        'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}' +(isRetina() ? '@2x' : '') +
+        '.png', { attribution: '&nbsp;', maxZoom: 14 }
       ).addTo(map);
 
       Api.start(map);

@@ -13,13 +13,13 @@ var fragments = window.fragments = function (value) {
    variables = hash.split('&'),
      results = {};
 
-  for (i = 0; i < variables.length; ++i) {
-    param = variables[i].split('=');
-    if (param.length == 2)
+  for (i = 0; i < variables.length; ++i) //{
+//    param = variables[i].split('=');
+    if ((param = variables[i].split('=')) && param.length == 2)
       results[param[0]] = param[1];
     else
       results[Object.keys(results).length] = param[0];
-  }
+  //}
 
   return results;
 }
@@ -42,6 +42,8 @@ var Api = {
   pinMarkers: {},
   panOptions: {animate:true, duration:1.6, easeLinearity:0.4},
   viewOptions: {pan: this.panOptions, zoom: {animate:true}, animate:true},
+//  filter: JSON.parse(localStorage.getItem('peabiru-filters')) ||
+//    { 'city', 'town', 'village', 'hamlet', 'suburb', 'farm', 'isolated_dwelling' },
   events: riot.observable(),
   markers: new L.FeatureGroup(),
   decode: geohash.decode.bind(geohash),
@@ -50,7 +52,8 @@ var Api = {
 
     if (ref)
       for (var i = 0; i < ref.length; ++i)
-        if (ref[i] != result[i] && (result = result.substring(i)) !== null) break;
+        if (ref[i] != result[i] && (result = result.substring(i)) !== null)
+          break;
 
     return result;
   },
@@ -95,8 +98,13 @@ var Api = {
   },
 
   loadPlaces: function (from, to, zoom) {
-    options = {method: 'GET', url: '/places/g/'+ from +(to.length == 0 ? '' : '-'+to)+ '.json'};
-    if (this.context == 'isolated') options.data = {isolated: true};
+    var options =
+      { method: 'GET', url: '/places/g/'+ from +(to.length == 0 ? '' : '-'+to)+ '.json', data: {} },
+        types   = JSON.parse(localStorage.getItem('peabiru-types')) || [];
+
+    if (this.context == 'isolated')           options.data.isolated = true;
+    if (types.length < 7 && types.length > 0) options.data.types    = types.join(',');
+
     Zepto.ajax(options).then(
       (zoom || 0) > 12 ? this.addPins.bind(this) : this.addCircles.bind(this)
     );

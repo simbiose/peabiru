@@ -126,7 +126,7 @@ footer {
   opacity: 0.5;
   position: absolute
 }
-menu { top: 4em; left: 4em }
+menu { top: 4em; left: 4em; z-index: 3 }
 loading {
   position: absolute;
   width: 24px;
@@ -164,6 +164,9 @@ footer .heart:after { left: 50%; top: 0 }
   footer { bottom: 3.5em; left: 3.5em }
   menu { left: 3.5em; top: 3.5em }
   loading { right: 3.5em; top: 3.5em }
+
+  .lefty { left: 3.5em; right: auto }
+  .righty { right: 3.5em; left: auto }
 }
 
 @media screen and (max-width: 1280px) {
@@ -182,6 +185,9 @@ footer .heart:after { left: 50%; top: 0 }
   footer { bottom: 2em; left: 2em }
   menu { left: 2em; top: 2em }
   loading { right: 2em; top: 2em }
+
+  .lefty { left: 2em; right: auto }
+  .righty { right: 2em; left: 0 }
 }
 
 @media screen and (max-height: 640px) {
@@ -199,6 +205,9 @@ footer .heart:after { left: 50%; top: 0 }
   footer { bottom: 1.25em; left: 1.25em }
   menu { top: 1.25em; left: 1.25em }
   loading { top: 1.25em; right: 1.25em  }
+
+  .lefty { left: 1.25em; right: auto }
+  .righty { right: 1.25em; left: auto }
 }
 
 a {
@@ -275,7 +284,8 @@ menu {
   position: absolute;
   max-width: 340px;
   margin: 0px;
-  padding: 0px
+  padding: 0px;
+  z-index: 3
 }
 menu form div { margin-left: 14px }
 menu form div span { color: white }
@@ -308,6 +318,7 @@ menu submenu ul li a i {
   margin-left: 8px
 }
 menu submenu ul li a span { color: red }
+menu submenu ul li.kind { padding: 1px 16px }
 
 .slideup, .slidedown {
   max-height: 0;
@@ -318,7 +329,7 @@ menu submenu ul li a span { color: red }
   transition: max-height 0.5s ease-in-out
 }
 .slidedown {
-  max-height: 136px;
+  max-height: 407px;
 }
 
 /*!

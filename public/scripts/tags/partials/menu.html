@@ -1,5 +1,5 @@
-<menu>
-  <button class="toleft hamburger hamburger--squeeze" type="button" onclick={ toggleMenu }>
+<menu class="righty">
+  <button class="toright hamburger hamburger--squeeze" type="button" onclick={ toggleMenu }>
     <span class="hamburger-box">
       <span class="hamburger-inner"></span>
     </span>
@@ -21,6 +21,9 @@
   <script>
 
     var searchTimeout = 0;
+    var typesOfPlace  = [
+      'city', 'town', 'village', 'hamlet', 'suburb', 'farm', 'isolated_dwelling'
+    ];
 
     toggleMenu (data) {
       var menu = Zepto('.hamburger'),
@@ -30,44 +33,77 @@
       if (data && data instanceof Array) {
         up = data.length == 0;
 
-        if (!window.places) window.places = [];
+        if (!window.places)
+          window.places = [];
+
         for (var i = 0; i < data.length; ++i)
           window.places[data[i].id] = data[i];
 
-        this.tags.submenu.update({slideDown:!up, slideUp:up, results:data});
-        if (active && !up) return;
-      } else {
-        this.tags.submenu.update({slideDown:!active, slideUp:active});
+        this.tags.submenu.update({
+          slideDown: !up, slideUp: up, results: data
+        });
+
+        if (active && !up)
+          return;
+      } else {  
+        if (!active) this.updateTypes();
+
+        this.tags.submenu.update({
+          slideDown: !active,
+          slideUp:   active,
+          results:   null,
+          types:     typesOfPlace
+        });
       }
+
       menu.toggleClass('is-active');
     }
 
     doSearch (input, value) {
-      if (input.length == 0 || input.val() != value || input.val().length < 3) return;
+      if (input.length == 0 || input.val() != value || input.val().length < 3)
+        return;
+
       Zepto.ajax({
         method: 'GET',
         url:    'places.json',
-        data:   {'search': input.val(), 'limit': 3}
+        data:   {search: input.val(), limit: 3}
       }).then(this.toggleMenu);
     }
 
     ajaxSearch (e) {
-      if (e.target.nodeName != 'INPUT') {
-        console.log(' was a form ');
-        e.preventDefault();
-        return false
-      }
+      if (e.target.nodeName != 'INPUT')
+        return !!e.preventDefault();
+
       if ((e.which || e.keyCode) != 13 && Zepto(e.target).val().length > 2) {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(this.doSearch.bind(
-          this, Zepto(e.target), Zepto(e.target).val()+String.fromCharCode(e.which || e.keyCode)
+          this, Zepto(e.target), Zepto(e.target).val() + String.fromCharCode(e.which || e.keyCode)
         ), 350);
       }
+
       return true
     }
 
-    this.on('mount', function () {
-      console.log(' mount menu ');
-    });
+    updateTypes () {
+      var types = fragments(location.hash);
+
+      types = types['types'] ? types['types'].split(',') :
+        (JSON.parse(localStorage.getItem('peabiru-types')) || []);
+
+      console.log(types);
+
+      if (typeof(typesOfPlace[0]) == 'string')
+        for (var i = 0; i < typesOfPlace.length; ++i)
+          typesOfPlace.splice(i, 1, {
+            name:    typesOfPlace[i].replace(/[_\-]/g, ' '),
+            slug:    typesOfPlace[i],
+            checked: types.indexOf(typesOfPlace[i]) > -1 || types.length == typesOfPlace.length
+          })
+      else
+        for (var i = 0; i < typesOfPlace.length; ++i)
+          typesOfPlace[i].checked =
+            types.indexOf(typesOfPlace[i].slug) > -1 || types.length == typesOfPlace.length
+    }
+
   </script>
 </menu>

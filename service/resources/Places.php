@@ -80,6 +80,9 @@ class Places extends \libs\Resourceful {
     if (!empty($search = $this->param('search')))
       $query->where('name ILIKE ? OR node = ?', "%$search%", (int) $search);
 
+    if (!empty($types = $this->param('types')))
+      $query->where('place', explode(',', $types));
+
     if ((
       $hashs = isset($params->geohash) ? [$params->geohash] : (isset($params->from) ?
         $this->geohash_range($params->from, $params->to) : null)
