@@ -40,10 +40,11 @@ var Api = {
   loadInterval: 0,
   circleMarkers: {},
   pinMarkers: {},
+  pinIcons: null,
   panOptions: {animate:true, duration:1.6, easeLinearity:0.4},
   viewOptions: {pan: this.panOptions, zoom: {animate:true}, animate:true},
-//  filter: JSON.parse(localStorage.getItem('peabiru-filters')) ||
-//    { 'city', 'town', 'village', 'hamlet', 'suburb', 'farm', 'isolated_dwelling' },
+  types: { city: '#b35806', town: '#f1a340', village: '#fee0b6', hamlet: '#f7f7f7',
+    suburb: '#d8daeb', farm: '#998ec3', isolated_dwelling: '#542788' },
   events: riot.observable(),
   markers: new L.FeatureGroup(),
   decode: geohash.decode.bind(geohash),
@@ -106,7 +107,7 @@ var Api = {
     if (types.length < 7 && types.length > 0) options.data.types    = types.join(',');
 
     Zepto.ajax(options).then(
-      (zoom || 0) > 12 ? this.addPins.bind(this) : this.addCircles.bind(this)
+      (zoom || 0) > 10 ? this.addPins.bind(this) : this.addCircles.bind(this)
     );
   },
 
@@ -182,18 +183,29 @@ var Api = {
   },
 
   addPins: function (data) {
-    var icon = L.divIcon({
-      className: 'icon-location' + (this.context == 'isolated' ? ' reddish' : '')
-    });
+    if (!this.pinIcons) {
+      var types = Object.keys(this.types),
+          total = types.length;
+
+      this.pinIcons = {};
+
+      for (var i = 0; i < total * 2; ++i)
+        this.pinIcons[types[i % total] + (i >= total ? '-red' : '')] = L.divIcon({
+          className: 'icon-location pin-'+ types[i % total] + (i >= total ? ' pin-reddish': '')
+        });
+    }
+
+
     for (var i = 0; i < data.length; ++i)
-      if (!this.pinMarkers[data[i].id])
+      if (!this.pinMarkers[data[i].id] && (item = data[i]))
         this.markers.addLayer((
-          this.pinMarkers[data[i].id] = L.marker(
-            [data[i].lat, data[i].lon], {icon: icon}
+          this.pinMarkers[item.id] = L.marker(
+            [ item.lat, item.lon ],
+            { icon: this.pinIcons[item.place + (!!item.isolated ? '-red' : '')] }
           ).bindPopup(
-            ' <a href="https://www.openstreetmap.org/node/'+ data[i].node +'" target="_blank">'+
-            data[i].name + '</a> <i>'+ data[i].place +'</i> <p>criado em: ' +
-            fmtDate(data[i].created_at) + '</p>'
+            ' <a href="https://www.openstreetmap.org/node/'+ item.node +'" target="_blank">'+
+            item.name + '</a> <i>'+ item.place +'</i> <p>criado em: ' +
+            fmtDate(item.created_at) + '</p>'
           )
         ));
 

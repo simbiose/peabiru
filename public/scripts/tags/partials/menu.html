@@ -21,9 +21,7 @@
   <script>
 
     var searchTimeout = 0;
-    var typesOfPlace  = [
-      'city', 'town', 'village', 'hamlet', 'suburb', 'farm', 'isolated_dwelling'
-    ];
+    var typesOfPlace  = Object.keys(Api.types);
 
     toggleMenu (data) {
       var menu = Zepto('.hamburger'),
@@ -89,8 +87,6 @@
 
       types = types['types'] ? types['types'].split(',') :
         (JSON.parse(localStorage.getItem('peabiru-types')) || []);
-
-      console.log(types);
 
       if (typeof(typesOfPlace[0]) == 'string')
         for (var i = 0; i < typesOfPlace.length; ++i)

@@ -417,7 +417,7 @@ menu submenu ul li.kind { padding: 1px 16px }
   -webkit-animation: spinner 0.5s infinite linear;
   animation: spinner 0.5s infinite linear
 }
-.icon-location { font-size: 22px }
+.icon-location { font-size: 22px; background-color: transparent !important }
 .icon-location:before { margin-left: -5px }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background-color: rgba(0, 0, 0, 0.8) !important }
 .leaflet-popup-content {
@@ -452,3 +452,57 @@ menu submenu ul li.kind { padding: 1px 16px }
   100% { transform: rotate(359deg) }
 }
 
+
+.round {
+  position: relative;
+  margin-top: 6px;
+  float: left;
+  height: 0px
+}
+
+.round label {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  height: 14px;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 14px
+}
+
+.round input[type="checkbox"] { visibility: hidden }
+.round input[type="checkbox"]:checked + label:after { opacity: 1 }
+
+
+.pin-city, .round.pin-city input[type="checkbox"]:checked + label
+  { color: #3cb44b; background-color: #3cb44b }
+.pin-town, .round.pin-town input[type="checkbox"]:checked + label
+  { color: #ffe119; background-color: #ffe119 }
+.pin-village, .round.pin-village input[type="checkbox"]:checked + label
+  { color: #0082c8; background-color: #0082c8 }
+.pin-hamlet, .round.pin-hamlet input[type="checkbox"]:checked + label
+  { color: #f58231; background-color: #f58231 }
+.pin-suburb, .round.pin-suburb input[type="checkbox"]:checked + label
+  { color: #911eb4; background-color: #911eb4 }
+.pin-farm, .round.pin-farm input[type="checkbox"]:checked + label
+  { color: #46f0f0; background-color: #46f0f0 }
+.pin-isolated_dwelling, .round.pin-isolated_dwelling input[type="checkbox"]:checked + label
+  { color: #f032e6; background-color: #f032e6 }
+
+.round, .round input[type=checkbox] + label { background-color: transparent }
+
+/*  */
+
+.round.pin-city input[type="checkbox"] + label { border-color: #3cb44b }
+.round.pin-town input[type="checkbox"] + label { border-color: #ffe119 }
+.round.pin-village input[type="checkbox"] + label { border-color: #0082c8 }
+.round.pin-hamlet input[type="checkbox"] + label { border-color: #f58231 }
+.round.pin-suburb input[type="checkbox"] + label { border-color: #911eb4 }
+.round.pin-farm input[type="checkbox"] + label { border-color: #46f0f0 }
+.round.pin-isolated_dwelling input[type="checkbox"] + label { border-color: #f032e6 }
+
+.pin-reddish {
+  text-shadow: 0px 0px 10px red, 2px 1px 4px red, 0 0 4px red, 0 0 4px red, 0 0 4px red
+}

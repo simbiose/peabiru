@@ -86,13 +86,15 @@ class Places extends \libs\Resourceful {
     if ((
       $hashs = isset($params->geohash) ? [$params->geohash] : (isset($params->from) ?
         $this->geohash_range($params->from, $params->to) : null)
-    ) && ($cluster = strlen($hashs[0]) < 5) !== null)
+    ) && ($cluster = strlen($hashs[0]) < 4) !== null) // < 5
       $query->where('hashs.len = ?', strlen($hashs[0]))->where('hash', $hashs);
     else
-      $query->where('hashs.len = 5')->group('places.id, hashs.hash');
+      $query->where('hashs.len = 4')->group('places.id, hashs.hash'); // 5
 
     if ($this->param('isolated'))
       $query->join('reports', 'INNER JOIN reports ON (places.id = reports.fk_places)');
+    else
+      $query->join('reports', 'LEFT JOIN reports ON (places.id = reports.fk_places)');
 
     if ($cluster)
       foreach (
@@ -101,7 +103,9 @@ class Places extends \libs\Resourceful {
       ) $places[] = $place;
     else
       foreach (
-        $query->select('places.*, hashs.hash') as $place
+        $query->select(
+          'places.id, places.created_at, lat, lon, name, node, place, COUNT(reports) AS isolated, hashs.hash'
+        )->group('places.id, hashs.hash') as $place
       ) $places[] = $place;
 
     return $places;

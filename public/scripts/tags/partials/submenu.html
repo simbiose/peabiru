@@ -16,9 +16,12 @@
     </li>
 
     <li each={ types } class="kind">
-      <input type="checkbox" name={ slug } onchange={ moveToPlace } checked={ checked }/> { name }
+      <div class="round pin-{ slug }">
+        <input type="checkbox" id={ slug } name={ slug } onchange={ moveToPlace } checked={ checked }/>
+        <label for={ slug }></label>
+      </div> { name }
     </li>
-    
+
   </ul>
 
   <script>
