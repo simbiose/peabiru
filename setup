@@ -149,6 +149,9 @@ function isdev { [ $ENV = "development" ]; }
 exists docker
 exists docker-compose
 
+# copy old deploy.sh
+[[ -e $(pwd)/shared/$DEPLOY ]] && cp $(pwd)/shared/$DEPLOY $(pwd)/$DEPLOY
+
 ini.parse $DEPLOY
 
 # match agains environments
@@ -211,6 +214,9 @@ config github_secret "Please input Github API secret: "
 
 ini.save $DEPLOY
 
+# save to shared too
+cp $DEPLOY $SHARED/$DEPLOY
+
 # drop database [rollback]
 function rollback {
   ask "Are you sure to rollback database? y or n" 'y' || exit 0;
@@ -234,8 +240,8 @@ function start {
     isinstalled && {
       docker start $CONTAINER
     } || {
-      rm -rf $SHARED/{logs,tmp,data,sock,pids}
-      mkdir -p $SHARED/{logs,tmp,data,sock,pids}
+      rm -rf $SHARED/{logs,tmp,data,sock,pids,conf}
+      mkdir -p $SHARED/{logs,tmp,data,sock,pids,conf}
       :>${CURRENT}/config/.env
       for k in ${!CONF[@]}; do
         [[ "${CONF[$k]}" = *\ * ]] && echo "${k}=\"${CONF[$k]}\"" >> ${CURRENT}/config/.env || \
@@ -272,7 +278,7 @@ function action {
     reset)    rollback && sleep 10 && migrate; ;;
     rollback) rollback; ;;
     help)     help && exit 1; ;;
-    *)        start && exit 1;
+    *)        stop && sleep 10 && start && exit 1;  #start && exit 1;
   esac
   return 0
 }
