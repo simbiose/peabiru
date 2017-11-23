@@ -21,7 +21,7 @@
   <script>
 
     var searchTimeout = 0;
-    var typesOfPlace  = Object.keys(Api.types);
+    var typesOfPlace  = Object.keys(Api.placeTypes);
 
     toggleMenu (data) {
       var menu = Zepto('.hamburger'),
@@ -37,6 +37,8 @@
         for (var i = 0; i < data.length; ++i)
           window.places[data[i].id] = data[i];
 
+        console.log(' submenu update ! ');
+
         this.tags.submenu.update({
           slideDown: !up, slideUp: up, results: data
         });
@@ -45,6 +47,8 @@
           return;
       } else {  
         if (!active) this.updateTypes();
+
+        console.log(' submenu update 2 ! ');
 
         this.tags.submenu.update({
           slideDown: !active,
@@ -93,12 +97,14 @@
           typesOfPlace.splice(i, 1, {
             name:    typesOfPlace[i].replace(/[_\-]/g, ' '),
             slug:    typesOfPlace[i],
-            checked: types.indexOf(typesOfPlace[i]) > -1 || types.length == typesOfPlace.length
+            checked: types.indexOf(typesOfPlace[i]) > -1 ||
+              types.length == typesOfPlace.length || types.length == 0
           })
       else
         for (var i = 0; i < typesOfPlace.length; ++i)
           typesOfPlace[i].checked =
-            types.indexOf(typesOfPlace[i].slug) > -1 || types.length == typesOfPlace.length
+            types.indexOf(typesOfPlace[i].slug) > -1 ||
+              types.length == typesOfPlace.length || types.length == 0;
     }
 
   </script>

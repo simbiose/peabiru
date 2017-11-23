@@ -13,13 +13,11 @@ var fragments = window.fragments = function (value) {
    variables = hash.split('&'),
      results = {};
 
-  for (i = 0; i < variables.length; ++i) //{
-//    param = variables[i].split('=');
+  for (i = 0; i < variables.length; ++i)
     if ((param = variables[i].split('=')) && param.length == 2)
       results[param[0]] = param[1];
     else
       results[Object.keys(results).length] = param[0];
-  //}
 
   return results;
 }
@@ -40,13 +38,29 @@ var Api = {
   loadInterval: 0,
   circleMarkers: {},
   pinMarkers: {},
-  pinIcons: null,
-  panOptions: {animate:true, duration:1.6, easeLinearity:0.4},
-  viewOptions: {pan: this.panOptions, zoom: {animate:true}, animate:true},
-  types: { city: '#b35806', town: '#f1a340', village: '#fee0b6', hamlet: '#f7f7f7',
-    suburb: '#d8daeb', farm: '#998ec3', isolated_dwelling: '#542788' },
+  pinIcons: {},
+  panOptions: { animate:true, duration:1.6, easeLinearity:0.4 },
+  viewOptions: { pan: this.panOptions, zoom: {animate:true}, animate:true },
+  placeTypes: /*new Proxy({
+    city: true, town: true, village: true, hamlet: true,
+    suburb: true, farm: true, isolated_dwelling: true
+  }, {
+    get: function (obj, prop) {
+      return obj[prop];
+    },
+
+    set: function (obj, prop, val) {
+      console.log( ' set '+ prop +' to '+ val );
+
+      obj[prop] = val;
+    }
+  }),*/
+ {
+    city: true, town: true, village: true, hamlet: true,
+    suburb: true, farm: true, isolated_dwelling: true
+  },
   events: riot.observable(),
-  markers: new L.FeatureGroup(),
+  markers: {}, //new L.FeatureGroup(),
   decode: geohash.decode.bind(geohash),
   encode: function (lat, lon, size, ref) {
     var result = geohash.encode(lat, lon, size);
@@ -65,7 +79,29 @@ var Api = {
 
     this.mapElement = Zepto('#bg-map');
 
-    this.map.addLayer(this.markers);
+    console.log(' loading ... ... ');
+
+    for (key in this.placeTypes) {
+      this.markers[key]    = new L.FeatureGroup();
+      this.pinMarkers[key] = [];
+
+      this.map.addLayer(this.markers[key]);
+    }
+
+    this.markers.circles = new L.FeatureGroup();
+    this.markers.user    = new L.FeatureGroup();
+
+    this.map.addLayer(this.markers.circles)
+      .addLayer(this.markers.user);
+
+    var _types = Object.keys(this.placeTypes),
+        total = _types.length;
+
+    for (var i = 0; i < total * 2; ++i)
+      this.pinIcons[_types[i % total] + (i >= total ? '-red' : '')] = L.divIcon({
+       className: 'icon-location pin-'+ _types[i % total] + (i >= total ? ' pin-reddish': '')
+      });
+
     this.map.on('dragstart zoomstart movestart', this.loading.bind(this));
     this.map.on('dragend zoomend moveend',       this.bounds.bind(this));
 
@@ -78,8 +114,28 @@ var Api = {
         if (hash[0] && !isNaN(hash[0]))
           return self.goToPlace.call(self, parseInt(hash[0]));
 
+        console.log(' here ');
+
         if (hash[0] && hash[0].indexOf('-') > -1 && (parts = hash[0].split('-'))) {
+
+          console.log(' here 2 ', self.userInteraction);
+
           if (!self.userInteraction && !self.isAt(parts[0], parts[1], parts[2])) {
+
+            console.log(' here 3 ');
+
+            if ((changes = self.filterChanged())) {
+
+              console.log(' here changed ');
+
+              self.clearMarkers(changes);
+
+              clearTimeout(self.loadInterval);
+              self.loadInterval = setTimeout(
+                self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
+              );
+            }
+
             setTimeout(function () {
               self.map.setView(
                 self.getCenter(parts[0], parts[1]), parseInt(parts[2]) || 13, self.viewOptions
@@ -88,6 +144,12 @@ var Api = {
             self.lockUser = true;
             self.map.once('moveend zoomend', self.unlockUser.bind(self));
           } else {
+
+            console.log(' here 4 ');
+
+            if ((changes = self.filterChanged()))
+              self.clearMarkers(changes);
+
             clearTimeout(self.loadInterval);
             self.loadInterval = setTimeout(
               self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
@@ -150,10 +212,8 @@ var Api = {
 
     this.userInteraction = false;
 
-    if (e.type == 'zoomend') {
-      this.markers.clearLayers();
-      this.pinMarkers = this.circleMarkers = {};
-    }
+    if (e.type == 'zoomend')
+      this.clearMarkers();
 
     if (e.type == 'dragend' || e.type == 'zoomend') {
       this.mapElement.css('cursor', 'pointer');
@@ -166,6 +226,23 @@ var Api = {
     this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 150);
   },
 
+  clearMarkers: function (types) {
+    types = types || (keys = Object.keys(this.placeTypes)).push('circles') && keys;
+
+    for (var i = 0; i < types.length; ++i) {
+      this.markers[types[i]].clearLayers();
+
+      if (this.pinMarkers[types[i]]) {
+        for (var j = 0, pins = this.pinMarkers[types[i]]; j < pins.length; ++j)
+          delete this.pinMarkers[pins[j]];
+
+        this.pinMarkers[types[i]] = [];
+      }
+    }
+
+    if (types.length) this.circleMarkers = {};
+  },
+
   addCircles: function (data) {
     var zoom = this.map.getZoom(),
        delta = (zoom < 5 ? 4000 : (zoom < 8 ? 2000 : (zoom < 11 ? 1000 : 100))) * 4,
@@ -173,7 +250,7 @@ var Api = {
 
     for (var i = 0; i < data.length; ++i)
       if (!this.circleMarkers[data[i].hash] && (this.circleMarkers[data[i].hash] = true))
-        this.markers.addLayer(L.circle(
+        this.markers.circles.addLayer(L.circle(
           [data[i].lat, data[i].lon],
           ((x = (100 * (data[i].count || 2))) < delta ? delta : x),
           {color: color, fillColor: color, stroke: false, fillOpacity: 0.6}
@@ -183,22 +260,12 @@ var Api = {
   },
 
   addPins: function (data) {
-    if (!this.pinIcons) {
-      var types = Object.keys(this.types),
-          total = types.length;
-
-      this.pinIcons = {};
-
-      for (var i = 0; i < total * 2; ++i)
-        this.pinIcons[types[i % total] + (i >= total ? '-red' : '')] = L.divIcon({
-          className: 'icon-location pin-'+ types[i % total] + (i >= total ? ' pin-reddish': '')
-        });
-    }
-
 
     for (var i = 0; i < data.length; ++i)
-      if (!this.pinMarkers[data[i].id] && (item = data[i]))
-        this.markers.addLayer((
+      if (
+        !this.pinMarkers[data[i].id] && (item = data[i]) &&
+        (this.pinMarkers[item.place].push(item.id))
+      ) this.markers[item.place].addLayer((
           this.pinMarkers[item.id] = L.marker(
             [ item.lat, item.lon ],
             { icon: this.pinIcons[item.place + (!!item.isolated ? '-red' : '')] }
@@ -259,6 +326,22 @@ var Api = {
     lng3 = lng1 + Math.atan2(By, (Math.cos(lat1) + Bx));
 
     return [(lat3 * 180) / Math.PI, (lng3 * 180) / Math.PI];
+  },
+
+  filterChanged: function () {
+    var types = JSON.parse(localStorage.getItem('peabiru-types')) || [],
+      keys    = Object.keys(this.placeTypes),
+      total   = keys.filter(function (key) {
+        return this.placeTypes[key]; }.bind(this)
+      ),
+      diff    = keys.filter(function (key) {
+        return this.placeTypes[key] && types.indexOf(key) == -1 }.bind(this)
+      );
+
+    for (var i = 0; i < keys.length; ++i)
+      this.placeTypes[keys[i]] = types.indexOf(keys[i]) > -1;
+
+    return total.length == types.length ? false : diff;
   },
 
   unlockUser: function () {
