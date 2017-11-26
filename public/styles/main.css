@@ -111,9 +111,10 @@ body {
 
 body > * { position: relative; z-index: 2 }
 
+header { pointer-events: none }
 header h1 { font-size: 3.25em; margin: 0 0 0.55em 0 }
 header p { font-size: 1.35em; line-height: 1.65em }
-header a { color: inherit }
+header a { color: inherit; pointer-events: auto }
 
 footer {
   -moz-transition: opacity 0.5s ease-in-out;
@@ -306,7 +307,8 @@ menu submenu {
   background-color: rgba(0, 0, 0, 0.6);
   margin: 6px 3px
 }
-menu submenu ul li { padding: 8px 16px }
+menu submenu ul { padding: 12px 0px }
+menu submenu ul li { padding: 1px 16px /*padding: 8px 16px*/ }
 menu submenu ul li a {
   color: white;
   font-size: 18px;
@@ -318,7 +320,10 @@ menu submenu ul li a i {
   margin-left: 8px
 }
 menu submenu ul li a span { color: red }
-menu submenu ul li.kind { padding: 1px 16px }
+menu submenu ul li.big {
+  padding: 8px 16px;
+  line-height: 33px
+}
 
 .slideup, .slidedown {
   max-height: 0;
@@ -455,7 +460,7 @@ menu submenu ul li.kind { padding: 1px 16px }
 
 .round {
   position: relative;
-  margin-top: 6px;
+  margin: 6px 2px;
   float: left;
   height: 0px
 }
@@ -471,6 +476,12 @@ menu submenu ul li.kind { padding: 1px 16px }
   top: 0;
   width: 14px
 }
+
+.round.big label {
+  width: 20px;
+  height: 20px
+}
+.big .round { margin: 6px 10px 6px 0px }
 
 .round input[type="checkbox"] { visibility: hidden }
 .round input[type="checkbox"]:checked + label:after { opacity: 1 }
@@ -506,3 +517,12 @@ menu submenu ul li.kind { padding: 1px 16px }
 .pin-reddish {
   text-shadow: 0px 0px 10px red, 2px 1px 4px red, 0 0 4px red, 0 0 4px red, 0 0 4px red
 }
+
+.pin-isolated label {
+  box-shadow: 0px 0px 14px red;
+  border: 1px red solid
+}
+.round.pin-isolated input[type="checkbox"]:checked + label { background-color: red }
+
+
+

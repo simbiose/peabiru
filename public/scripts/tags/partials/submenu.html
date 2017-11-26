@@ -8,14 +8,24 @@
   </ul>
 
   <ul if={ slideDown && !results } class="submenu">
+    <li class="big">
+      <div class="round big pin-isolated">
+        <input type="checkbox" id="isolated" name="isolated" onchange={ moveToPlace }
+          checked={ location.pathname.indexOf('isolated') > -1 } />
+        <label for="isolated"></label>
+      </div> isolated
+    </li>
+
+<!--
     <li>
       <a href="/isolated" onclick={ moveToPlace }>Lugares isolados</a>
     </li>
     <li>
       <a href="/places" onclick={ moveToPlace }>Lugares importados</a>
     </li>
+-->
 
-    <li each={ types } class="kind">
+    <li each={ types } >
       <div class="round pin-{ slug }">
         <input type="checkbox" id={ slug } name={ slug } onchange={ moveToPlace } checked={ checked }/>
         <label for={ slug }></label>
@@ -29,8 +39,9 @@
     var typesTimeout = 0;
 
     moveToPlace (e) {
-      var item = Zepto(e.target),
-       checked = [];
+      var item  = Zepto(e.target),
+       checked  = [],
+       isolated = false;
 
       if (e.type != 'change')
         this.parent.toggleMenu();
@@ -44,15 +55,23 @@
       if (item.prop('type') != 'checkbox') return;
 
       Zepto('li input[type=checkbox]').each(function (index, node) {
-        if (node.checked) checked.push(node.name);
+        if (node.name == 'isolated') {
+         if (node.checked) isolated = true;
+        } else
+         if (node.checked) checked.push(node.name);
       });
 
       if (typesTimeout)
         clearTimeout(typesTimeout);
 
+      var pathname = location.pathname,
+              path = isolated ? (pathname.indexOf('isolated') > -1 ? pathname : '/isolated') : '/';
+
+      console.log( path );
+
       typesTimeout = setTimeout(function () {
         localStorage.setItem('peabiru-types', JSON.stringify(checked));
-        router.go(location.pathname + (location.hash.length > 2 ? location.hash : ''));
+        router.go(path + (location.hash.length > 2 ? location.hash : ''));
       }, 800);
     }
   </script>

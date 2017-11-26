@@ -41,26 +41,13 @@ var Api = {
   pinIcons: {},
   panOptions: { animate:true, duration:1.6, easeLinearity:0.4 },
   viewOptions: { pan: this.panOptions, zoom: {animate:true}, animate:true },
-  placeTypes: /*new Proxy({
-    city: true, town: true, village: true, hamlet: true,
-    suburb: true, farm: true, isolated_dwelling: true
-  }, {
-    get: function (obj, prop) {
-      return obj[prop];
-    },
-
-    set: function (obj, prop, val) {
-      console.log( ' set '+ prop +' to '+ val );
-
-      obj[prop] = val;
-    }
-  }),*/
- {
+  placeTypes: {
     city: true, town: true, village: true, hamlet: true,
     suburb: true, farm: true, isolated_dwelling: true
   },
   events: riot.observable(),
-  markers: {}, //new L.FeatureGroup(),
+  markers: {},
+  nonIsolatedMarkers: [],
   decode: geohash.decode.bind(geohash),
   encode: function (lat, lon, size, ref) {
     var result = geohash.encode(lat, lon, size);
@@ -106,9 +93,19 @@ var Api = {
     this.map.on('dragend zoomend moveend',       this.bounds.bind(this));
 
     Zepto(window).on('load', function (e) {
-      console.log(' on load -> zepto ');
+      console.log(' on load -> zepto ', self.context);
+      var contextChanged = false;
 
-      self.context = location.pathname.substring(1);
+//      if (
+//        self.context != null && self.context != '' && self.context != location.pathname.substring(1)
+//      ) contextChanged = true;
+//
+      if (self.context == null || self.context != location.pathname.substring(1))
+        contextChanged = true;
+
+      console.log( '  context changed? '+ (contextChanged ? ' yeah ' : ' no ') );
+
+      self.context = location.pathname.substring(1) || 'places';
 
       if (location.hash != '' && (hash = fragments(location.hash))) {
         if (hash[0] && !isNaN(hash[0]))
@@ -124,11 +121,11 @@ var Api = {
 
             console.log(' here 3 ');
 
-            if ((changes = self.filterChanged())) {
+            if ((changes = self.filterChanged()) || (contextChanged && self.context == 'isolated')) {
 
               console.log(' here changed ');
 
-              self.clearMarkers(changes);
+              self.clearMarkers(changes, contextChanged);
 
               clearTimeout(self.loadInterval);
               self.loadInterval = setTimeout(
@@ -141,32 +138,46 @@ var Api = {
                 self.getCenter(parts[0], parts[1]), parseInt(parts[2]) || 13, self.viewOptions
               );
             }, 100);
+
             self.lockUser = true;
             self.map.once('moveend zoomend', self.unlockUser.bind(self));
+
+            return;
           } else {
 
             console.log(' here 4 ');
 
-            if ((changes = self.filterChanged()))
-              self.clearMarkers(changes);
+            if ((changes = self.filterChanged()) || (contextChanged && self.context == 'isolated'))
+              self.clearMarkers(changes, contextChanged);
 
             clearTimeout(self.loadInterval);
-            self.loadInterval = setTimeout(
+
+            return self.loadInterval = setTimeout(
               self.loadPlaces.bind(self, parts[0], parts[1], parts[2]), 150
             );
           }
         }
       }
+
+      if (contextChanged) {
+        clearTimeout(self.loadInterval);
+
+        return self.loadInterval = setTimeout(self.loadPlaces.bind(self), 150);
+      }
+
     });
   },
 
   loadPlaces: function (from, to, zoom) {
+    if (!from)
+      [from, to, zoom] = this.getBounds();
+
     var options =
       { method: 'GET', url: '/places/g/'+ from +(to.length == 0 ? '' : '-'+to)+ '.json', data: {} },
         types   = JSON.parse(localStorage.getItem('peabiru-types')) || [];
 
-    if (this.context == 'isolated')           options.data.isolated = true;
     if (types.length < 7 && types.length > 0) options.data.types    = types.join(',');
+    if (this.context == 'isolated')           options.data.isolated = true;
 
     Zepto.ajax(options).then(
       (zoom || 0) > 10 ? this.addPins.bind(this) : this.addCircles.bind(this)
@@ -192,8 +203,17 @@ var Api = {
   },
 
   loading: function (e) {
+
+    console.log( e.type, ' [loading] ' );
+
     if (this.lockUser) return;
-    if (e.type == 'dragstart') this.mapElement.css('cursor', 'move');
+
+    if (!this.userInteraction && e.type == 'dragstart')
+      this.userInteraction = true;
+
+    if (e.type == 'dragstart')
+      this.mapElement.css('cursor', 'move');
+
     this.userInteraction = true;
     this.events.trigger('loading')
   },
@@ -201,14 +221,9 @@ var Api = {
   bounds: function (e) {
     if (this.lockUser) return;
 
-    var bounds   = this.map.getBounds(),
-         topLeft = bounds.getNorthWest(),
-     bottomRight = bounds.getSouthEast(),
-            zoom = this.map.getZoom();
+    console.log(' bounds [] [] ');
 
-    var size = 8 > zoom ? 2 : (10 > zoom ? 3 : (12 > zoom ? 4 : 5));
-    var from = this.encode(topLeft.lat, topLeft.lng, size),
-          to = this.encode(bottomRight.lat, bottomRight.lng, size, from);
+    var bounds = this.getBounds();
 
     this.userInteraction = false;
 
@@ -217,25 +232,57 @@ var Api = {
 
     if (e.type == 'dragend' || e.type == 'zoomend') {
       this.mapElement.css('cursor', 'pointer');
+
       router.go(
-        location.pathname + location.search +'#'+ from +'-'+ to +'-'+ zoom
+        location.pathname + location.search +'#'+ bounds[0] +'-'+ bounds[1] +'-'+ bounds[2]
       );
     }
-
+/*
     clearTimeout(this.loadInterval);
-    this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 150);
+    //this.loadInterval = setTimeout(this.loadPlaces.bind(this, from, to, zoom), 150);
+    this.loadInterval = setTimeout(this.loadPlaces.bind(this, bounds[0], bounds[1], bounds[2]), 150);
+*/
   },
 
-  clearMarkers: function (types) {
+  getBounds: function (size) {
+    var bounds  = this.map.getBounds(),
+        topLeft = bounds.getNorthWest(),
+    bottomRight = bounds.getSouthEast(),
+           zoom = this.map.getZoom();
+
+    size = size || (8 > zoom ? 2 : (10 > zoom ? 3 : (12 > zoom ? 4 : 5)));
+
+    return [
+      (from = this.encode(topLeft.lat, topLeft.lng, size)),
+      this.encode(bottomRight.lat, bottomRight.lng, size, from),
+      zoom
+    ];
+  },
+
+  clearMarkers: function (types, switchIsolated) {
+    console.log(' cleaning markers ', types);
+
     types = types || (keys = Object.keys(this.placeTypes)).push('circles') && keys;
 
+/*    if (switchIsolated)
+      for (var i = 0; i < types.length; ++i)
+        if (this.pinMarkers[types[i]])
+          for (var
+*/
     for (var i = 0; i < types.length; ++i) {
-      this.markers[types[i]].clearLayers();
+//      this.markers[types[i]].clearLayers();
 
-      if (this.pinMarkers[types[i]]) {
+      if (this.pinMarkers[types[i]])
         for (var j = 0, pins = this.pinMarkers[types[i]]; j < pins.length; ++j)
-          delete this.pinMarkers[pins[j]];
+          if (this.pinMarkers[pins[j]]) {
+            if (switchIsolated && this.nonIsolatedMarkers.indexOf(pins[j]) > -1)
+              this.markers[types[i]].removeLayer(this.pinMarkers[pins[j]]);
 
+            delete this.pinMarkers[pins[j]];
+          }
+
+      if (!switchIsolated) {
+        this.markers[types[i]].clearLayers();
         this.pinMarkers[types[i]] = [];
       }
     }
@@ -265,7 +312,11 @@ var Api = {
       if (
         !this.pinMarkers[data[i].id] && (item = data[i]) &&
         (this.pinMarkers[item.place].push(item.id))
-      ) this.markers[item.place].addLayer((
+      ) {
+        if (!item.isolated)
+          this.nonIsolatedMarkers.push(item.id);
+
+        this.markers[item.place].addLayer((
           this.pinMarkers[item.id] = L.marker(
             [ item.lat, item.lon ],
             { icon: this.pinIcons[item.place + (!!item.isolated ? '-red' : '')] }
@@ -275,6 +326,7 @@ var Api = {
             fmtDate(item.created_at) + '</p>'
           )
         ));
+      }
 
     if (
       location.hash != '' && (hash = fragments(location.hash)) &&
@@ -285,20 +337,13 @@ var Api = {
   },
 
   isAt: function (from, to, zoom) {
-    var bounds   = this.map.getBounds(),
-         topLeft = bounds.getNorthWest(),
-     bottomRight = bounds.getSouthEast(),
-            size = from.length,
-           _zoom = this.map.getZoom();
-
-    var _from = this.encode(topLeft.lat, topLeft.lng, size),
-          _to = this.encode(bottomRight.lat, bottomRight.lng, size, _from);
+    var bounds = this.getBounds(from.length);
 
     if (from.length == to.length)
       for (var i = 0; i < from.length; ++i)
         if (from[i] != to[i] && (to = to.substring(i)) !== null) break;
 
-    return zoom == _zoom && from == _from && to == _to;
+    return zoom == bounds[2] && from == bounds[0] && to == bounds[1];
   },
 
   getCenter: function (from, to) {

@@ -35,7 +35,7 @@
     this.on('mount', function () {
       map = L.map('bg-map', {
         reuseTiles: true, unloadInvisibleTiles: true, zoomControl: false,
-        dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false,
+  //      dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false,
         maxZoom: 14, minZoom: 4
       }).setView(path[index], 13);
 
@@ -51,24 +51,12 @@
       if (opts.traveler) {
         Zepto('#bg-map').css('cursor', 'hand');
         interval = setTimeout(this.travel, duration);
-        if (map.options.dragging) {
-          map.dragging.disable();
-          map.touchZoom.disable();
-          map.doubleClickZoom.disable();
-          map.scrollWheelZoom.disable();
-        }
       } else {
         Zepto('#bg-map').css('cursor', 'pointer');
         if (interval) {
           clearTimeout(interval);
           map.stop();
           interval = 0;
-        }
-        if (!map.options.dragging) {
-          map.dragging.enable();
-          map.touchZoom.enable();
-          map.doubleClickZoom.enable();
-          map.scrollWheelZoom.enable();
         }
       }
     });
