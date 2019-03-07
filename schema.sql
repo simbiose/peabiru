@@ -53,6 +53,24 @@ CREATE TABLE IF NOT EXISTS strategies (
 
 CREATE UNIQUE INDEX IF NOT EXISTS strategies_uniq ON strategies (identifier, strategy);
 
+CREATE TABLE IF NOT EXISTS areas (
+  id SERIAL NOT NULL PRIMARY KEY,
+  relation BIGINT DEFAULT NULL,
+  level SMALLINT NOT NULL,
+  area VARCHAR(100),
+  last_check TIMESTAMP DEFAULT NULL,
+  lat DECIMAL(7, 5) NOT NULL,
+  lon DECIMAL(8, 5) NOT NULL,
+  fk_areas INTEGER DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT areas_area FOREIGN KEY (fk_areas) REFERENCES areas (id)
+);
+
+DROP TRIGGER IF EXISTS areas_update_timestamp ON areas;
+CREATE TRIGGER areas_update_timestamp BEFORE UPDATE ON areas
+  FOR EACH ROW EXECUTE PROCEDURE update_timestamp();
+
 CREATE TABLE IF NOT EXISTS places (
   id SERIAL NOT NULL PRIMARY KEY,
   node BIGINT DEFAULT NULL,
@@ -61,11 +79,8 @@ CREATE TABLE IF NOT EXISTS places (
   lat DECIMAL(7, 5) NOT NULL,
   lon DECIMAL(8, 5) NOT NULL,
   name VARCHAR(160) NOT NULL,
-  fk_places INTEGER DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT place_place FOREIGN KEY (fk_places)
-    REFERENCES places (id) ON DELETE CASCADE
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS places_name ON places (name varchar_pattern_ops);
@@ -86,6 +101,18 @@ CREATE TABLE IF NOT EXISTS user_places (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_places_uniq ON user_places (fk_users, fk_places);
+
+CREATE TABLE IF NOT EXISTS place_areas (
+  fk_places INTEGER NOT NULL,
+  fk_areas INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT place_area_place FOREIGN KEY (fk_places)
+    REFERENCES places (id) ON DELETE CASCADE,
+  CONSTRAINT place_changedrea_area FOREIGN KEY (fk_areas)
+    REFERENCES areas (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS place_areas_uniq ON place_areas (fk_places, fk_areas);
 
 CREATE TABLE IF NOT EXISTS paths (
   id SERIAL NOT NULL PRIMARY KEY,

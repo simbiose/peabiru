@@ -31,7 +31,7 @@ server {
     try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.php${DOLLAR}is_args${DOLLAR}args;
   }
 
-  location ~ /login/ {
+  location ~ /(login|users)/ {
     try_files ${DOLLAR}uri ${DOLLAR}uri/ /index.php${DOLLAR}is_args${DOLLAR}args;
   }
 

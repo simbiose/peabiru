@@ -1,0 +1,241 @@
+#!/usr/bin/env php7
+<?php
+
+/**
+ * test connection between a hundred places at once
+ *
+ *
+ */
+
+include 'utils.php';
+
+$opts           = getopt('t:m:s:r:s:h');
+$default_radius = (int) (isset($opts['r']) ? $opts['r'] : 1000);
+$max_locations  = (int) (isset($opts['m']) ? $opts['m'] : 100);
+$precision      = (isset($opts['s']) ? $opts['s'] == '1' || $opts['s'] == 'true' : true);
+$max_locations  = $max_locations > 100 ? 100 : $max_locations;
+$locations      = isset($opts['t']) ?
+  array_map(function ($p) { return explode(',', $p); }, explode(';', $opts['t'])) : null;
+
+define('MIN_RADIUS', $default_radius);
+
+if (isset($opts['h'])) exit('
+  -h  show this help.
+  -d  enable debug messages.
+  -m  max locations (places) each to test run.
+  -t  test list of given places, example -48.09936,-20.83876;-48.402424,-20.17695.
+  -s  "second analysis" - use directions analysis for more precision, default true.
+  -r  radius tolerance in meters for directions, default 200.
+
+');
+
+$interactions      = 0;
+
+/**
+ * coordinates loop helper
+ *
+ * @param  array  $coordinate
+ * @return string
+ */
+
+function each_coord ($coordinate) {
+  return join($coordinate, ',');
+}
+
+/**
+ * distance between two points in meters using haversine formula
+ *
+ * @param  float $lat
+ * @param  float $lon
+ * @param  float $lat2
+ * @param  float $lon2
+ * @return float
+ */
+
+function distance ($lat, $lon, $lat2, $lon2) {
+  $latDelta = deg2rad($lat2 - $lat);
+  $lonDelta = deg2rad($lon2 - $lon);
+
+  return 6371000 * (2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+    cos(deg2rad($lat)) * cos(deg2rad($lat2)) * pow(sin($lonDelta / 2), 2))));
+}
+
+/**
+ * decode polyline
+ *
+ * @param  string  $encoded
+ * @param  integer $precision
+ * @return array
+ */
+
+function decode ($encoded, $precision = 6) {
+  $index       = 0;
+  $coordinates = [];
+  $offOn       = [0, 1];
+  $previous    = [0, 0];
+  $factor      = pow(10, $precision);
+
+  while ($index < strlen($encoded)) {
+    $ll = [0, 0];
+
+    foreach ($offOn as $j) {
+      $byte   = 0x20;
+      $shift  = 0;
+      
+      while ($byte >= 0x20) {
+        $byte    = ord($encoded[$index++]) - 63;
+        $ll[$j] |= ($byte & 0x1f) << $shift;
+        $shift  += 5;
+      }
+
+      $ll[$j]       = $previous[$j] + (($ll[$j] & 1) ? ~($ll[$j] >> 1) : ($ll[$j] >> 1));
+      $previous[$j] = $ll[$j];
+    }
+
+    array_push($coordinates, [$ll[0] / $factor, $ll[1] / $factor]);
+  }
+
+  return $coordinates;
+}
+
+/**
+ * return disconnected places
+ *
+ * @param  array   $coords
+ * @param  string  $method
+ * @param  integer $radius
+ * @return array
+ */
+
+function disconnected ($coords, $method = 'auto', $radius = null) {
+  $radius  = $radius ?: MIN_RADIUS;
+  $results = [];
+  $urls    = [];
+  $total   = count($coords) / 2;
+
+  for ($i = 0; $i < $total * 2; $i+=2)
+    array_push($urls, 'http://valhalla:8080/route?json='. json_encode([
+      'costing'   => $method,
+      'locations' => [
+        array_intersect_key($coords[$i],   ['lon' => 0, 'lat' => 0]),
+        array_intersect_key($coords[$i+1], ['lon' => 0, 'lat' => 0])
+    ]]));
+
+  $data = get($urls, ['Content-Type: application/json'], [], null, DEBUG);
+
+  for ($i = 0; $i < $total; ++$i) {
+    $cindex = $i * 2;
+
+    if ($data[$i][0] == 400) {
+      array_push($results, ...array_slice($coords, $cindex, 2));
+    } else if ($data[$i][0] == 200) {
+      $path = decode($data[$i][1]->trip->legs[0]->shape);
+      
+      if (
+        distance($path[0][0], $path[0][1], $coords[$cindex]['lat'], $coords[$cindex]['lon']) > $radius
+      ) array_push($results, $coords[$cindex]);
+
+      end($path);
+
+      if (
+        distance(
+          $path[key($path)][0], $path[key($path)][1], $coords[$cindex + 1]['lat'], $coords[$cindex + 1]['lon']
+        ) > $radius
+      ) array_push($results, $coords[$cindex + 1]);
+    }
+  }
+
+  return $results;
+}
+
+//
+$isolated  = [];
+$places    = [];
+$ids       = [];
+$index     = 0;
+$max_inter = 10;
+$batch     = 10;
+$total     = ceil(\libs\Norm::places()->count() / 100);
+
+do {
+  $isolated  = [];
+  $places    = [];
+  $ids       = [];
+  $start     = microtime(true);
+
+  foreach (
+    \libs\Norm::places()->select('id, lon, lat, name, last_check, place, node')
+    ->limit($max_locations > 100 ? 100 : $max_locations)
+    ->order('last_check DESC, RANDOM()') as $place
+  ) {
+    array_push($ids, $place['id']); 
+    $places[$place['id']] = $place->jsonSerialize();
+  }
+
+  info(sprintf(' testing %d', count($ids)));
+  info($ids);
+
+  for ($i = 0, $l = count($ids); $i < $l; $i += $batch * 2)  
+    if (!empty(
+      $res = disconnected(array_values(
+        array_intersect_key($places, array_fill_keys(array_slice($ids, $i, $batch * 2), []))
+      ))
+    )) for ($j = 0; $j < count($res); ++$j)
+        if (!empty($isolated[$res[$j]['id']] = $res[$j]))
+          unset($places[$res[$j]['id']]);
+
+  info('');
+  info(' isolated: '. count($isolated) .', connected: '. count($places));
+  info(' second phase ....');
+  info('');
+
+  $last = [count($isolated), count($places)];
+
+  foreach ($isolated as $id => $current) {
+    $coords = [];
+
+    for ($i = 0; $i < $max_inter; ++$i)
+      array_push($coords, $current, $places[array_rand($places)]);
+
+    $res = array_column(disconnected($coords), 'id');
+
+    if (count(array_keys($res, $id)) == $max_inter) {
+      info('node #'. $id .' isolated? yes');
+      continue;
+    }
+
+    info('node #'. $id .' isolated? no');
+
+    $places[$id] = $current;
+    unset($isolated[$id]);
+  }
+
+  reset($isolated);
+
+  // TODO: check for non-solved reports
+  for ($i = 0, $l = count($isolated); $i < $l; ++$i) {
+    if (!\libs\Norm::reports()->where(['fk_places'=>current($isolated)['id'] ])->count())
+      \libs\Norm::reports()->insert(['report'=>'isolated', 'fk_places'=>current($isolated)['id']]);
+
+    next($isolated);
+  }
+
+  \libs\Norm::places()->where('id', $ids)->update(['last_check' => new NotORM_Literal('NOW()')]);
+ 
+  info('');
+  info(' summary ');
+  info(
+    ' isolated: '. $last[0] .'->'. count($isolated) .
+    ', connected: '. $last[1] .'->'. count($places)
+  );
+  info(' isolated places ', array_column($isolated, 'node'));
+  info((sprintf(' processed in %s', htime(microtime(true)-$start))));
+  info('');
+
+  unset($places);
+  unset($isolated);
+  unset($ids);
+  sleep(10);
+} while ($total > $index++);
+
+?>

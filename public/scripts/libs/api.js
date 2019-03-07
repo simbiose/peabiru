@@ -100,6 +100,7 @@ var Api = {
 //        self.context != null && self.context != '' && self.context != location.pathname.substring(1)
 //      ) contextChanged = true;
 //
+//      console.log(self.context, location.pathname.substring(1));
       if (self.context == null || self.context != location.pathname.substring(1))
         contextChanged = true;
 
@@ -108,6 +109,7 @@ var Api = {
       self.context = location.pathname.substring(1) || 'places';
 
       if (location.hash != '' && (hash = fragments(location.hash))) {
+        console.log(' here 0 ');
         if (hash[0] && !isNaN(hash[0]))
           return self.goToPlace.call(self, parseInt(hash[0]));
 
@@ -169,8 +171,11 @@ var Api = {
   },
 
   loadPlaces: function (from, to, zoom) {
+    console.log(' loading places ');
     if (!from)
       [from, to, zoom] = this.getBounds();
+
+    console.log( ' bounds ', from, to, zoom);
 
     var options =
       { method: 'GET', url: '/places/g/'+ from +(to.length == 0 ? '' : '-'+to)+ '.json', data: {} },
@@ -185,6 +190,7 @@ var Api = {
   },
 
   goToPlace: function (id) {
+    console.log(' go to place ', id);
     waterfall([
       function (cb) {
         if (window.places && window.places[id]) return cb(null, window.places[id]);
@@ -196,14 +202,17 @@ var Api = {
         });
       }
     ], function (err, data) {
+      console.log(' should open place ', data);
+      this.lockUser = true;
+      this.loadInterval = setTimeout(this.loadPlaces.bind(this), 600);
+      setTimeout(this.unlockUser.bind(this), 1000);
       setTimeout(
-        this.map.setView.bind(this.map, [data.lat, data.lon], 13, this.viewOptions), 150
+        this.map.setView.bind(this.map, [data.lat, data.lon], 13, this.viewOptions), 250
       );
     }.bind(this));
   },
 
   loading: function (e) {
-
     console.log( e.type, ' [loading] ' );
 
     if (this.lockUser) return;

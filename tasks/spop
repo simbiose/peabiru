@@ -42,7 +42,7 @@ if (isset($opts['h']))
 if (file_exists($temp) && filesize($temp) == 0) {
   if (!(($result = get(
     'https://overpass-api.de/api/interpreter?'. http_build_query(['data' => sprintf(
-'[out:json][timeout:%d];
+'[out:json][timeout:%d][maxsize:2000000000];
 area(%d)->.searchArea;
 (
   node["place"~"^(%s)$"](area.searchArea);

@@ -93,9 +93,9 @@ function parser (&$body, &$rheaders, &$bsize, $fhandler) {
 }
 
 /**
- * regular request
+ * regular request, multiple requests
  *
- * @param  string  $url
+ * @param  mixed   $url
  * @param  mixed   $post
  * @param  array   $headers
  * @param  array   $opts
@@ -107,52 +107,93 @@ function parser (&$body, &$rheaders, &$bsize, $fhandler) {
 function request ($url, $post=false, $headers=[], $opts=[], $fname=null, $stats=false) {
   if (empty($url)) throw new Exception('url is empty');
 
+  $active   = null;
+  $mrc      = null;
   $rstart   = microtime(true);
-  $load     = $bsize = 0;
+  $load     = 0;
   $fhandler = false;
   $version  = 'curl-php/'. curl_version()['version'];
-  $body     = '';
+  $bsize    = [];
+  $body     = [];
   $rheaders = [];
+  $handlers = [];
+  $codes    = [];
+  $results  = [];
+  $url      = flatten([$url]);
 
   if ($fname && ($fhandler = fopen($fname, 'w+'))) $opts = $opts + [
       CURLOPT_NOPROGRESS       => false,
       CURLOPT_PROGRESSFUNCTION => function (...$n) use (&$load) { $load = $n[2]; }
     ];
 
-  if ($stats) echo strftime('%m/%d %T  ', time()). (($post ? 'POST' : 'GET') .' '.
-    (strlen($url) > 100 ? substr($url, 0, 80).' [...] '.substr($url, -20) : $url));
+  $multi = curl_multi_init();
+  $total = count($url);
 
-  $handler = curl_init($url);
+  for ($i = 0; $i < count($url); ++$i) {
+    if ($stats)
+      echo strftime('%m/%d %T  ', time()). (($post ? 'POST' : 'GET') .' '. (strlen($url[$i]) > 100 ?
+        substr($url[$i], 0, 80). ' [...] '.substr($url[$i], -20) : $url[$i])) .($i == count($url)-1 ? '' : PHP_EOL);
 
-  curl_setopt_array($handler, [
-    CURLOPT_ENCODING             => '',
-    CURLOPT_RETURNTRANSFER       => true,
-    CURLOPT_HEADER               => true,
-    CURLOPT_FOLLOWLOCATION       => true,
-    CURLOPT_BUFFERSIZE           => 8192,
-    CURLOPT_MAX_RECV_SPEED_LARGE => 65536,
-    CURLOPT_WRITEFUNCTION        => parser($body, $rheaders, $bsize, $fhandler),
-    CURLOPT_HTTPHEADER           => array_merge([
-      'Accept: application/json', 'User-Agent: '.$version, 'Expect:'], $headers
-    )] + $opts + ($post ? [CURLOPT_POSTFIELDS =>
-      (is_string($post) ? $post : http_build_query($post))] : [])
-  );
+    $body[$i]     = '';
+    $bsize[$i]    = 0;
+    $rheaders[$i] = [];
+    $handlers[$i] = curl_init($url[$i]);
 
-  $response = curl_exec($handler);
-  $code     = curl_getinfo($handler, CURLINFO_HTTP_CODE);
-  curl_close($handler);
+    curl_setopt_array($handlers[$i], [
+      CURLOPT_ENCODING             => '',
+      CURLOPT_RETURNTRANSFER       => true,
+      CURLOPT_HEADER               => true,
+      CURLOPT_FOLLOWLOCATION       => true,
+      CURLOPT_BUFFERSIZE           => 8192,
+      CURLOPT_MAX_RECV_SPEED_LARGE => 65536,
+      CURLOPT_WRITEFUNCTION        => parser($body[$i], $rheaders[$i], $bsize[$i], $fhandler),
+      CURLOPT_HTTPHEADER           => array_merge([
+        'Accept: application/json', 'User-Agent: '.$version, 'Expect:'], $headers
+      )] + $opts + ($post ? [CURLOPT_POSTFIELDS =>
+        (is_string($post) ? $post : http_build_query($post))] : [])
+    );
+
+    curl_multi_add_handle($multi, $handlers[$i]);
+  }
+
+  do {
+    if (curl_multi_select($multi) == -1) usleep(1);
+    do
+      $mrc = curl_multi_exec($multi, $active);
+    while ($mrc == CURLM_CALL_MULTI_PERFORM);
+  } while ($active && $mrc == CURLM_OK);
+
+  foreach ($handlers as $i => $handler) {
+    $codes[$i] = curl_getinfo($handler, CURLINFO_HTTP_CODE);
+    curl_multi_remove_handle($multi, $handler);
+  }
+
+  curl_multi_close($multi);
 
   if ($fname) {
     fclose($fhandler);
     if ($stats) info(sprintf(
       PHP_EOL. 'finished - total size %.1f KiB, payload %.1f KiB, ratio %.2f in %s',
-      $bsize/1024, $load/1024, $bsize/$load, htime(microtime(true)-$rstart)
+      $bsize[0]/1024, $load/1024, $bsize[0]/$load, htime(microtime(true)-$rstart)
     ));
   } else
       if ($stats) echo (sprintf(' - finished in %s', htime(microtime(true)-$rstart))) .PHP_EOL;
 
-  return [$code, (substr($rheaders['content-type'] ?: '', 0, 16)=='application/json') ?
-    json_decode($body) : $body, $rheaders];
+  for ($i = 0; $i < $total; ++$i)
+    array_push($results, [
+      $codes[$i],
+      (substr($rheaders[$i]['content-type'] ?: '', 0, 16) == 'application/json') ? json_decode($body[$i]) : $body,
+      $rheaders[$i]
+    ]);
+
+  unset($handlers);
+  unset($rheaders);
+  unset($body);
+  unset($bsize);
+  unset($url);
+  unset($codes);
+
+  return $total > 1 ? $results : flatten($results);
 }
 
 /**
@@ -233,6 +274,19 @@ function array_rec_diff ($st_array, $nd_array) {
     }
   }
   return $a_return;
+}
+
+/**
+ * flatten array
+ *
+ * @param  array $array
+ * @return array
+ */
+
+function flatten (array $array) {
+  $return = [];
+  array_walk_recursive($array, function($a) use (&$return) { $return[] = $a; });
+  return $return;
 }
 
 ?>

@@ -68,6 +68,7 @@ class Router {
    */
 
   function dispatch ($debug=false) {
+    debug(' dispatch ');
     $routes     = &$this->_routes;
     $uri        = $_SERVER['REQUEST_URI'];
     $method     = $_SERVER['REQUEST_METHOD'];
@@ -90,12 +91,16 @@ class Router {
 
     list($status, $handler, $vars) = $dispatcher->dispatch($method, rawurldecode($uri));
 
+    debug($status);
+
     switch ($status) {
       case \FastRoute\Dispatcher::NOT_FOUND:
+        debug(' not found ');
         http_response_code(404);
         header($json ? 'application/json' : 'text/html');
         exit($json ? '{"status":"Not found"}' : 'Not found');
       case \FastRoute\Dispatcher::METHOD_NOT_ALLOWED: // $handler ($allowed_method)
+        debug(' not allowed ');
         $implemented = in_array($method, array_values($this->_actions));
         $status      = $implemented ? 'Method not allowed' : 'Not implemented';
 
@@ -103,17 +108,20 @@ class Router {
         header($json ? 'application/json' : 'text/html');
         exit($json ? '{"status":"'. $status .'"}' : $status);
       case \FastRoute\Dispatcher::FOUND:
+        debug(' found ');
         try {
           $vars             = new \ArrayObject($vars, \ArrayObject::ARRAY_AS_PROPS);
           $instance         = new $handler[0]($handler[1], $vars);
           $instance->action = $handler[1];
+
+          debug($handler);
 
           if ($instance->_code > 200) $instance->finish(null, true);
           $instance->finish(
             $instance->{$handler[1]}($vars, ...array_values($vars->getArrayCopy())), true
           );
         } catch (Exception $e) {
-          log(' raised exception with ', $e->getMessage());
+          debug(' raised exception with ', $e->getMessage());
 
           http_response_code(500);
           header($json ? 'application/json' : 'text/html');

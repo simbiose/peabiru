@@ -45,12 +45,12 @@ SQL
   }
 
   function getSequence ($table) {
-    debug(' [sequence] ', sprintf('%s_%s_seq', $table, $this->struct[$table]['pk']));
+//    debug(' [sequence] ', sprintf('%s_%s_seq', $table, $this->struct[$table]['pk']));
     return sprintf('%s_%s_seq', $table, $this->struct[$table]['pk']);
   }
 
   function getRelation ($parent, $table) {
-    debug(" [relations] parent: $parent -> $table");
+//    debug(" [relations] parent: $parent -> $table");
     $results    = [];
     $ref_parent = $this->struct[$parent][$table] ?: [$this->struct[$parent]['pk']];
     $ref_table  = $this->struct[$table][$parent] ?: [$this->struct[$table]['pk']];
@@ -62,7 +62,7 @@ SQL
     } else {
       $results[] = array_merge($ref_parent, $ref_table);
     }
-    debug(' [relations] ', $results, $this->struct[$parent]);
+//    debug(' [relations] ', $results, $this->struct[$parent]);
     return $results;
   }
 }

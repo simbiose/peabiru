@@ -48,17 +48,20 @@ Router.prototype = (function () {
     },
 
     exec: function (path) {
+      console.log(' exec ', path);
       path = path.split('?')[0].split('#')[0];
-      if (this.__routes.length === 0) return;
+      if (this.__routes.length === 0) { console.log('no routes'); return; }
       var matches;
       for (var i = 0; i < this.__routes.length; i++)
         if ((matches = path.match(this.__routes[i][0])) !== null) {
+          console.log(' matched ');
           window.dispatchEvent(new Event('load'));
           return this.__routes[i][1].apply(null, matches.slice(1));
         }
     },
 
     emit: function (path) {
+      console.log(' emit ', path);
       if (Object.keys(this.history).length > 0) {
         var key;
         for (key in this.history);
@@ -106,6 +109,7 @@ Router.prototype = (function () {
     },
 
     go: function (path) {
+      console.log(' go to ', path);
       var part = /([^\?\#]*)(\??[^#]*)(\#?.*)/.exec(path);
 
       if (Object.keys(this.history).length == 0 && (this.history[part[1] + part[2]] = path))

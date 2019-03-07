@@ -1,0 +1,275 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "84ad2a62609e1d048e267ca7822e1cbb",
+    "packages": [
+        {
+            "name": "koine/core",
+            "version": "0.9.x-dev",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/koinephp/Core.git",
+                "reference": "642d6e33796c6423353bb69071153cc8f7380989"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/koinephp/Core/zipball/642d6e33796c6423353bb69071153cc8f7380989",
+                "reference": "642d6e33796c6423353bb69071153cc8f7380989",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*",
+                "satooshi/php-coveralls": "dev-master"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Koine\\": "lib"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marcelo Jacobus",
+                    "email": "marcelo.jacobus@gmail.com"
+                }
+            ],
+            "description": "Primitive types behaving like grown up objects",
+            "homepage": "https://github.com/koinephp/core",
+            "time": "2015-08-15 23:16:50"
+        },
+        {
+            "name": "koine/strong-parameters",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/koinephp/StrongParameters.git",
+                "reference": "e3a5d7f1a4a2beabaafd7febf9b347e564f34e30"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/koinephp/StrongParameters/zipball/e3a5d7f1a4a2beabaafd7febf9b347e564f34e30",
+                "reference": "e3a5d7f1a4a2beabaafd7febf9b347e564f34e30",
+                "shasum": ""
+            },
+            "require": {
+                "koine/core": "~0.9.10",
+                "php": ">=5.3.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "*",
+                "satooshi/php-coveralls": "dev-master"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Koine\\": "lib"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marcelo Jacobus",
+                    "email": "marcelo.jacobus@gmail.com"
+                }
+            ],
+            "description": "Rails like Strong parameters for php",
+            "time": "2016-12-05 10:26:52"
+        },
+        {
+            "name": "nikic/fast-route",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nikic/FastRoute.git",
+                "reference": "b5f95749071c82a8e0f58586987627054400cdf6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nikic/FastRoute/zipball/b5f95749071c82a8e0f58586987627054400cdf6",
+                "reference": "b5f95749071c82a8e0f58586987627054400cdf6",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "FastRoute\\": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Nikita Popov",
+                    "email": "nikic@php.net"
+                }
+            ],
+            "description": "Fast request router for PHP",
+            "keywords": [
+                "router",
+                "routing"
+            ],
+            "time": "2017-01-19 11:35:12"
+        },
+        {
+            "name": "vclayton/unpecl-oauth",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vclayton/unpecl-oauth.git",
+                "reference": "c653018937be4a153b81a92125c714ebd29d3287"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vclayton/unpecl-oauth/zipball/c653018937be4a153b81a92125c714ebd29d3287",
+                "reference": "c653018937be4a153b81a92125c714ebd29d3287",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-hash": "*",
+                "ext-openssl": "*",
+                "php": ">=5.1.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Native PHP drop-in replacement for the PECL OAuth extension",
+            "homepage": "https://github.com/vclayton/unpecl-oauth",
+            "keywords": [
+                "oauth",
+                "pecl"
+            ],
+            "time": "2016-04-20 15:02:33"
+        },
+        {
+            "name": "vlucas/valitron",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vlucas/valitron.git",
+                "reference": "b33c79116260637337187b7125f955ae26d306cc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vlucas/valitron/zipball/b33c79116260637337187b7125f955ae26d306cc",
+                "reference": "b33c79116260637337187b7125f955ae26d306cc",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Valitron": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "authors": [
+                {
+                    "name": "Vance Lucas",
+                    "email": "vance@vancelucas.com",
+                    "homepage": "http://www.vancelucas.com"
+                }
+            ],
+            "description": "Simple, elegant, stand-alone validation library with NO dependencies",
+            "homepage": "http://github.com/vlucas/valitron",
+            "keywords": [
+                "valid",
+                "validation",
+                "validator"
+            ],
+            "time": "2017-02-23 08:31:59"
+        },
+        {
+            "name": "vrana/notorm",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vrana/notorm.git",
+                "reference": "e49d5d2f1bfe440dc82b61f46172635dfcb6f6dd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vrana/notorm/zipball/e49d5d2f1bfe440dc82b61f46172635dfcb6f6dd",
+                "reference": "e49d5d2f1bfe440dc82b61f46172635dfcb6f6dd",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "NotORM.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0",
+                "GPL-2.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Jakub Vrána",
+                    "homepage": "http://www.vrana.cz/"
+                }
+            ],
+            "description": "NotORM is a PHP library for simple working with data in the database.",
+            "homepage": "http://www.notorm.com/",
+            "keywords": [
+                "database",
+                "dbal"
+            ],
+            "time": "2014-10-30 16:55:08"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "nikic/fast-route": 20,
+        "vlucas/valitron": 20,
+        "koine/strong-parameters": 20,
+        "vrana/notorm": 20,
+        "vclayton/unpecl-oauth": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

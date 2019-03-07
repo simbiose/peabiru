@@ -23,6 +23,8 @@ trait Permissible {
    */
 
   function __call ($name, $args) {
+    debug($name);
+    debug($args);
     if (!method_exists($this, $name)) {
       debug(' raised exception with '. $name .' does not contains '. get_class($this));
       throw new \Exception('Method '.$name.' does not exists in resource: '. get_class($this));

@@ -283,7 +283,7 @@ header h2 { font-size: 1.35em; font-weight: 500 }
 
 menu {
   position: absolute;
-  max-width: 340px;
+  max-width: 342px;
   margin: 0px;
   padding: 0px;
   z-index: 3

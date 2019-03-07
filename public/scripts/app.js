@@ -27,11 +27,11 @@ router.add({
   '/': function () {
     app.update({home: (location.hash != '' ? false : true)});
   },
-/*
+
   '/places': function () {
     app.update({home: false, places: true});
   },
-*/
+
   '/isolated': function () {
     app.update({home: false, isolated: true});
   }

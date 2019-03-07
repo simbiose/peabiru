@@ -24,7 +24,7 @@ class Users extends \libs\Resourceful {
   function __construct ($action, $params) {
     debug(' users->__construct ', $action, $params);
 
-    $this->is_user = ($id && $this->current_user($id));
+    $this->is_user = (($id = $this->session('id')) && $this->current_user($id));
 
     if (
       in_array($action, ['show', 'update', 'destroy']) &&
@@ -70,6 +70,7 @@ class Users extends \libs\Resourceful {
    */
 
   protected function show ($params, $id, $strategy=null) {
+    //debug($this->headers);
     if ($id == 'login' && !empty($strategy))
       return $this->create(null, $strategy);
 
@@ -122,7 +123,7 @@ class Users extends \libs\Resourceful {
       Norm::strategies()->insert([
         'fk_users'=>$this->session['id'], 'strategy'=>$strategy, 'identifier'=>$user->id
       ]);
-
+      debug(' location 1 ', $user);
       exit(header('Location: /users/'. $this->session['slug']));
     }
 
@@ -134,7 +135,8 @@ class Users extends \libs\Resourceful {
     ) {
       $provider = $user->email == $item['email'] ? $item['st'] : $provider;
       if ($item['si'] == $user->id) {
-        $this->session('id', $item['uid']);
+        $this->session(['id' => $item['uid'], 'slug' => $item['slug']]);
+        debug(' location 2 ');
         exit(header('Location: /users/'. $item['slug']));
       }
     }
@@ -147,9 +149,8 @@ class Users extends \libs\Resourceful {
           'slug'=>$slug, 'nick'=>$user->name, 'email'=>$user->email
         ])) && Norm::strategies()->insert([
           'fk_users'=>$last['id'], 'strategy'=>$strategy, 'identifier'=>$user->id
-        ]) &&
-        $this->session('id', $last['id'])
-      ) exit(header('Location: /users/'. $last['slug']));
+        ]) && $this->session(['id' => $last['id'], 'slug' => $last['slug']])
+      ) { debug(' location 3 '); exit(header('Location: /users/'. $last['slug'])); }
 
       $this->session['error'] = 'failed to authenticate user using '. $strategy;
     } else {

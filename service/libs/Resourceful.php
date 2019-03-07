@@ -39,7 +39,7 @@ class Resourceful {
    */
 
   function __get ($property) {
-    debug(' __get ', $property);
+    //debug(' __get ', $property);
     switch ((string) $property) {
       case 'xhr':
         return isset($this->headers['x-requested-with']) &&
@@ -84,7 +84,7 @@ class Resourceful {
    */
 
   function __isset ($property) {
-    debug(' __isset ', $property);
+    //debug(' __isset ', $property);
     switch ((string) $property) {
       case 'xhr':     return true;
       case 'method':  return $this->method && empty($this->_method);
@@ -183,7 +183,7 @@ class Resourceful {
    */
 
   function params (...$args) {
-    debug(' params() ', $args);
+    //debug(' params() ', $args);
     if (empty($args)) return $this->params;
     \Koine\Parameters::$throwExceptions = false;
     if (count($args) == 1) return new \ArrayObject(

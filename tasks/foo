@@ -1,0 +1,190 @@
+#!/usr/bin/env php
+<?php
+
+include 'utils.php';
+
+/*
+$places = [];
+
+foreach (\libs\Norm::places()->select('node') as $place)
+  array_push($places, $place->node);
+
+info('finished');
+
+sleep(10);
+
+info(count($places));
+
+sleep(10);
+ */
+
+
+$opts     = getopt('e:k:a:t:f:b:h');
+$p_list   = [
+  'city'   => true, 'town' => true, 'village' => true, 'hamlet' => true,
+  'suburb' => true, 'farm' => true, 'isolated_dwelling' => true
+];
+
+$root_area = 3600059470;
+
+$temp    = isset($opts['f']) ? $opts['f'] : tempnam(sys_get_temp_dir(), 'foo_');
+$temp2   = isset($opts['b']) ? $opts['b'] : tempnam(sys_get_temp_dir(), 'fxx_');
+$timeout = (int) (isset($opts['t']) ? $opts['t'] : 1200);
+
+$payload = sprintf(
+'[out:csv(_row;false)][timeout:%d][maxsize:2000000000];
+rel(area:%d)[name][boundary=administrative][admin_level~"^[2-6]$"];
+foreach->.r(
+  make out _row = r.set(t["admin_level"]) +";"+ r.set(id()) +";"+ r.set(t["name"]);
+  out;
+);
+out;
+>;
+out skel qt;', $timeout, $root_area);
+
+info($payload);
+
+// get all boundaries inside boundary
+if (file_exists($temp) && filesize($temp) == 0) {
+  if (!(($result = get(
+    'https://overpass-api.de/api/interpreter?'. http_build_query(['data' => $payload]), [],
+  [CURLOPT_CONNECTTIMEOUT=>15, CURLOPT_TIMEOUT=>$timeout], $temp, true
+  )) && $result[0] == 200))
+    if (DEBUG)
+      debug($result);
+    else
+      exit('failed to download json');
+}
+
+if (filesize($temp) > 30e6) exit('file too big to process, exiting script'. PHP_EOL);
+
+$data = file_get_contents($temp);
+
+$lines = explode("\n", $data);
+
+$index     = [];  // area_id => [relation_id, level, name, children => [], parent => 0]
+$cities    = [];  // area_id => [city_id, ...]
+$levels    = [];  // [2] => [999999, 999999, ...], [3] => [...], ...
+$queries   = [];
+$removable = [];
+$root      = [];
+
+// populate index, cities and queries and set root area
+foreach ($lines as $line) {
+  list($level, $relation, $name) = explode(';', trim($line));
+
+  $area_id = $relation + 3600000000;
+
+  if (!$level || isset($index[$area_id]) || (!empty($root) && (int) $level == $root[1]))
+    continue;
+
+  if (!isset($levels[(int) $level]))
+    $levels[(int) $level] = [];
+
+  $index[$area_id]  = [(int) $relation, (int) $level, $name, 'children' => [], 'parent' => 0];
+  $cities[$area_id] = [];
+
+  array_push($levels[(int) $level], $area_id);
+
+  if ($area_id == $root_area)
+    $root = &$index[$area_id];
+
+  array_push(
+    $queries,
+    'rel(' .$relation. ')[name]; out;' .PHP_EOL. 'node(area:' .$area_id. ')[name][place~"town|city"]; out;' .PHP_EOL
+  );
+}
+
+info(count($queries));
+
+$results = [];
+
+// make queries or load from file
+if (file_exists($temp2) && filesize($temp2) > 0) {
+  $data  = file_get_contents($temp2);
+  $results = array_map('intval', array_filter(explode("\n", $data)));
+} else {
+  $query   = sprintf('[out:csv(::id;false)][timeout:%d][maxsize:2000000000];', $timeout). PHP_EOL.PHP_EOL;
+  $results = [];
+  $urls    = [];
+
+  while (!empty($queries))
+    array_push($urls, 'https://overpass-api.de/api/interpreter?'. http_build_query([
+      'data' => trim($query . implode(PHP_EOL, array_splice($queries, 0, 20)))
+    ]));
+
+  info(count($urls));
+
+  while (count($urls)) {
+    $url  = array_shift($urls);
+    $data = get($url, [], [], null, true);
+
+    if ($data[0] != 200) {
+      array_unshift($urls, $url);
+
+      sleep(30);
+      continue;
+    }
+
+    $results = array_merge($results, array_map('intval', array_filter(explode("\n", $data[1]))));
+
+    sleep(10);
+  }
+}
+
+info(count($results));
+
+info($results[0]);
+info($results[count($results) - 1]);
+
+if (!file_exists($temp2) || filesize($temp2) == 0)
+  file_put_contents($temp2, implode("\n", $results));
+
+$last_area = 0;
+
+// push cities into cities array
+for ($i = 0; $i < count($results); ++$i) {
+  if (isset($cities[3600000000 + $results[$i]]) && ($last_area = 3600000000 + $results[$i]))
+    continue;
+
+  array_push($cities[$last_area], $results[$i]);
+}
+
+// populate children and set parent
+foreach ($cities as $area_id => $area_cities) {
+  $current_level = $index[$area_id][1];
+  $parent_id     = 0;
+
+  while ($parent_id == 0 && ($parents = $levels[--$current_level]))
+    for ($i = 0; $i < count($parents); ++$i)
+      if (in_array($area_cities[array_rand($area_cities)], $cities[$parents[$i]]) && ($parent_id = $parents[$i]))
+        break;
+
+  $index[$area_id]['parent'] = $parent_id;
+
+  if ($index[$parent_id])
+    array_push($index[$parent_id]['children'], $area_id);
+}
+
+// set removable children
+foreach ($index as $area_id => $area_data) {
+  if ($area_data['parent'] == 0 && $area_id != $root_area)
+    get_all_children($index, (3600000000 + $area_data[0]), $removable);
+}
+
+
+function get_all_children ($index, $area_id, &$flattened) {
+  array_push($flattened, $area_id);
+
+  if (isset($index[$area_id]) && !empty($index[$area_id]['children']))
+    for ($i = 0; $i < count($index[$area_id]['children']); ++$i)
+      get_all_children($index, $index[$area_id]['children'][$i], $flattened);
+}
+
+for ($i = 0; $i < count($removable); ++$i) {
+  info($index[$removable[$i]][2]);
+
+  unset($index[$removable[$i]], $cities[$removable[$i]]);
+}
+
+info($removable);

@@ -16,7 +16,8 @@ trait Authenticable {
   private $strategies = [
     /* oauth */
     'osm' => [
-      'base' => ('http://api06.'. (DEV ? 'dev.' : '') .'openstreetmap.org/'), 'method' => 'oauth'
+      //'base' => ('http://api06.'. (DEV ? 'dev.' : '') .'openstreetmap.org/'), 'method' => 'oauth'
+      'base' => ('https://master.apis.'. (DEV ? 'dev.' : '') .'openstreetmap.org/'), 'method' => 'oauth'
     ],
     'twitter' => [
       'base' => 'https://api.twitter.com/', 'method' => 'oauth'

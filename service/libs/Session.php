@@ -29,10 +29,10 @@ trait Session {
         }
 
         function __destruct () {
-          debug(' should save session and send cookies, SID: ', $this->_sid);
+          debug(' ['. $_SERVER['REQUEST_URI'] .'] should save session and send cookies, SID: ', $this->_sid);
           if (!$this->_sid) $this->_sid = uniqid(true);
           // name, value, expire, path, domain, secure, httponly
-          setcookie('peabiru', $this->_sid, time()+3600, '', $_SERVER['HTTP_HOST'], false, true);
+          setcookie('peabiru', $this->_sid, time()+3600, '/', '.'. $_SERVER['HTTP_HOST'], false, false);//true);
           apcu_store('peabiru-'. $this->_sid, (array) $this->getArrayCopy(), 60*60*24);
         }
       };
